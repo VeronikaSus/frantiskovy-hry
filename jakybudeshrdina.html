@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kým budeš jednou? 🦸‍♂️</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --yellow: #FFD700;
+            --red:    #FF4040;
+            --blue:   #2D8FFF;
+            --green:  #28D47A;
+            --purple: #9B59F6;
+            --orange: #FF8C42;
+            --dark:   #1A1A2E;
+            --bg:     #F8F3FF;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Nunito', 'Arial Rounded MT Bold', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background-image:
+                radial-gradient(circle at 15% 25%, rgba(255,215,0,.18) 0%, transparent 50%),
+                radial-gradient(circle at 85% 75%, rgba(45,143,255,.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(155,89,246,.08) 0%, transparent 70%);
+        }
+
+        /* ── SCREENS ── */
+        .screen { display: none; width: 100%; max-width: 680px; }
+        .screen.active {
+            display: block;
+            animation: popIn .35s cubic-bezier(.34,1.56,.64,1);
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(.92) translateY(16px); }
+            to   { opacity: 1; transform: scale(1)   translateY(0);    }
+        }
+
+        /* ── CARD ── */
+        .card {
+            background: #fff;
+            border: 4px solid var(--dark);
+            border-radius: 28px;
+            box-shadow: 8px 8px 0 var(--dark);
+            padding: 36px 32px;
+        }
+
+        /* ══ WELCOME ══ */
+        #screen-welcome .card { text-align: center; }
+        .comic-title {
+            font-size: 2.6em; font-weight: 900;
+            color: var(--dark); line-height: 1.15;
+            margin-bottom: 6px; letter-spacing: -1px;
+        }
+        .comic-title .hl {
+            color: var(--red);
+            background: var(--yellow);
+            padding: 0 8px; border-radius: 8px;
+            border: 3px solid var(--dark);
+            display: inline-block;
+            animation: tilt 1.4s ease-in-out infinite alternate;
+        }
+        @keyframes tilt {
+            from { transform: rotate(-2deg); }
+            to   { transform: rotate( 2deg); }
+        }
+        .mascot-big {
+            font-size: 6.5em; display: block;
+            margin: 18px 0 14px;
+            animation: float 2.2s ease-in-out infinite alternate;
+            filter: drop-shadow(4px 6px 0 rgba(0,0,0,.18));
+        }
+        @keyframes float {
+            from { transform: translateY(0)    rotate(-3deg); }
+            to   { transform: translateY(-14px) rotate(3deg);  }
+        }
+        .welcome-sub {
+            font-size: 1.15em; color: #555;
+            line-height: 1.6; margin-bottom: 28px;
+            max-width: 420px; margin-left: auto; margin-right: auto;
+        }
+        .badge-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 28px; }
+        .badge {
+            background: #F0EBFF; border: 3px solid var(--dark);
+            border-radius: 50px; padding: 6px 16px;
+            font-size: .9em; font-weight: 700; color: var(--dark);
+        }
+
+        /* ── BUTTONS ── */
+        .btn {
+            background: var(--yellow); color: var(--dark);
+            border: 4px solid var(--dark); border-radius: 50px;
+            padding: 16px 48px; font-size: 1.4em; font-weight: 900;
+            font-family: inherit; cursor: pointer;
+            box-shadow: 6px 6px 0 var(--dark);
+            transition: transform .08s, box-shadow .08s;
+        }
+        .btn:hover  { transform: translate(2px,2px); box-shadow: 4px 4px 0 var(--dark); }
+        .btn:active { transform: translate(5px,5px); box-shadow: 1px 1px 0 var(--dark); }
+        .btn-restart { background: #F0EBFF; }
+        .btn-dislike {
+            background: #fff; color: #888;
+            border: 3px dashed #ccc; border-radius: 50px;
+            padding: 10px 28px; font-size: 1em; font-weight: 700;
+            font-family: inherit; cursor: pointer;
+            transition: all .15s;
+        }
+        .btn-dislike:hover { border-color: var(--red); color: var(--red); background: #FFF5F5; }
+
+        /* ══ QUESTION SCREEN ══ */
+        .progress-track {
+            background: #E8E0FF; border: 3px solid var(--dark);
+            border-radius: 50px; height: 26px;
+            margin-bottom: 14px; overflow: hidden;
+            box-shadow: 3px 3px 0 var(--dark);
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, var(--green), #1BC98E);
+            height: 100%; border-radius: 50px;
+            transition: width .5s ease;
+            display: flex; align-items: center;
+            justify-content: flex-end; padding-right: 10px;
+        }
+        .progress-fill.extra {
+            background: linear-gradient(90deg, var(--orange), var(--red));
+        }
+        .progress-label { font-size: .75em; font-weight: 900; color: #fff; white-space: nowrap; }
+        .q-counter { text-align: center; font-size: .9em; font-weight: 700; color: #888; margin-bottom: 16px; }
+
+        /* extra-round banner */
+        .extra-banner {
+            display: none;
+            background: var(--orange);
+            border: 3px solid var(--dark);
+            border-radius: 14px;
+            padding: 10px 18px;
+            margin-bottom: 14px;
+            font-size: .95em;
+            font-weight: 900;
+            color: #fff;
+            text-align: center;
+            box-shadow: 4px 4px 0 var(--dark);
+        }
+        .extra-banner.show { display: block; }
+
+        /* Speech bubble */
+        .bubble-wrap { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 22px; }
+        .mascot-sm { font-size: 3.2em; flex-shrink: 0; animation: float 2.2s ease-in-out infinite alternate; }
+        .speech-bubble {
+            background: var(--yellow); border: 4px solid var(--dark);
+            border-radius: 22px 22px 22px 4px;
+            padding: 18px 22px; box-shadow: 5px 5px 0 var(--dark); flex: 1;
+        }
+        .speech-bubble.extra { background: #FFE0CC; }
+        .q-text { font-size: 1.2em; font-weight: 900; color: var(--dark); line-height: 1.45; }
+
+        /* Options */
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .opt-btn {
+            background: #fff; border: 4px solid var(--dark);
+            border-radius: 20px; padding: 16px 14px;
+            cursor: pointer; font-family: inherit;
+            font-size: 1.0em; font-weight: 700; color: var(--dark);
+            text-align: center;
+            box-shadow: 5px 5px 0 var(--dark);
+            transition: transform .08s, box-shadow .08s, background .1s;
+            display: flex; flex-direction: column; align-items: center;
+            gap: 7px; line-height: 1.35;
+        }
+        .opt-btn:hover  { transform: translate(2px,2px); box-shadow: 3px 3px 0 var(--dark); background: #FAFAEE; }
+        .opt-btn:active { transform: translate(4px,4px); box-shadow: 1px 1px 0 var(--dark); }
+        .opt-btn.chosen { transform: translate(4px,4px); box-shadow: 1px 1px 0 var(--dark); }
+        .opt-0 { border-color:#FF6B6B; box-shadow:5px 5px 0 #FF6B6B; } .opt-0:hover{background:#FFF5F5;} .opt-0.chosen{background:#FFE8E8;}
+        .opt-1 { border-color:#38D9A9; box-shadow:5px 5px 0 #38D9A9; } .opt-1:hover{background:#F0FFF8;} .opt-1.chosen{background:#D5F7EC;}
+        .opt-2 { border-color:#748FFC; box-shadow:5px 5px 0 #748FFC; } .opt-2:hover{background:#F5F7FF;} .opt-2.chosen{background:#E5E9FF;}
+        .opt-3 { border-color:#FF922B; box-shadow:5px 5px 0 #FF922B; } .opt-3:hover{background:#FFF7F0;} .opt-3.chosen{background:#FFE8D0;}
+        .opt-emoji { font-size: 2.4em; display: block; }
+        .opt-text  { font-size: .93em; }
+
+        /* ── ENCOURAGEMENT ── */
+        .enc-overlay {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%,-50%) scale(0);
+            background: var(--yellow);
+            border: 5px solid var(--dark); border-radius: 22px;
+            padding: 18px 42px; font-size: 1.9em; font-weight: 900;
+            box-shadow: 8px 8px 0 var(--dark);
+            z-index: 200; pointer-events: none;
+            transition: transform .2s cubic-bezier(.34,1.56,.64,1);
+            white-space: nowrap;
+        }
+        .enc-overlay.show { transform: translate(-50%,-50%) scale(1); }
+
+        /* ══ RESULT SCREEN ══ */
+        #screen-result .card { text-align: center; }
+        .result-label { font-size: 1em; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        .result-emoji-big {
+            font-size: 6em; display: block;
+            margin: 10px 0 8px;
+            animation: float 2.2s ease-in-out infinite alternate;
+            filter: drop-shadow(4px 6px 0 rgba(0,0,0,.15));
+        }
+        .result-banner {
+            display: inline-block; background: var(--red); color: #fff;
+            font-size: 1.1em; font-weight: 900;
+            padding: 10px 28px; border-radius: 50px;
+            border: 4px solid var(--dark); box-shadow: 5px 5px 0 var(--dark);
+            margin: 6px 0 12px;
+            animation: pulse 1.6s ease-in-out infinite alternate;
+        }
+        @keyframes pulse { from{transform:scale(1);} to{transform:scale(1.06);} }
+        .result-job { font-size: 2.6em; font-weight: 900; color: var(--dark); margin-bottom: 16px; line-height: 1.2; }
+        .result-desc {
+            font-size: 1.1em; color: #444; line-height: 1.65;
+            background: #F8F3FF; border: 3px solid var(--dark);
+            border-radius: 18px; padding: 18px 22px;
+            margin-bottom: 20px; text-align: left;
+        }
+        .result-stars { font-size: 1.8em; margin-bottom: 18px; }
+        .btn-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+        .dislike-row { margin-top: 16px; padding-top: 16px; border-top: 2px dashed #eee; }
+        .dislike-hint { font-size: .85em; color: #aaa; margin-bottom: 8px; }
+
+        /* ── CONFETTI ── */
+        .confetti-wrap { position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; overflow:hidden; z-index:100; }
+        .cf { position:absolute; border-radius:3px; animation:cfFall linear forwards; }
+        @keyframes cfFall {
+            0%   { transform:translateY(-20px) rotate(0deg);   opacity:1; }
+            100% { transform:translateY(105vh) rotate(680deg); opacity:0; }
+        }
+
+        /* ── RESPONSIVE ── */
+        @media(max-width:480px){
+            .card{padding:24px 18px;}
+            .comic-title{font-size:1.9em;}
+            .options-grid{grid-template-columns:1fr;}
+            .q-text{font-size:1.05em;}
+            .result-job{font-size:1.9em;}
+            .mascot-big{font-size:4.5em;}
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══ WELCOME ══ -->
+<div class="screen active" id="screen-welcome">
+    <div class="card">
+        <div class="comic-title">Kým budeš<br><span class="hl">jednou?</span></div>
+        <span class="mascot-big">🦸‍♂️</span>
+        <p class="welcome-sub">Odpověz na 10 tajných otázek a já ti prozradím, jaký skvělý hrdina z tebe vyroste!</p>
+        <div class="badge-row">
+            <span class="badge">🧠 10 otázek</span>
+            <span class="badge">🏆 19 povolání</span>
+            <span class="badge">⏱️ 3 minuty</span>
+        </div>
+        <button class="btn" onclick="startGame()">🚀 Hrát!</button>
+    </div>
+</div>
+
+<!-- ══ QUESTION ══ -->
+<div class="screen" id="screen-question">
+    <div class="progress-track">
+        <div class="progress-fill" id="prog-fill" style="width:0%">
+            <span class="progress-label" id="prog-label"></span>
+        </div>
+    </div>
+    <div class="q-counter" id="q-counter"></div>
+    <div class="extra-banner" id="extra-banner">🔍 Ještě 3 otázky a přijdeme na to!</div>
+    <div class="bubble-wrap">
+        <span class="mascot-sm" id="mascot-sm">🧑‍🚀</span>
+        <div class="speech-bubble" id="speech-bubble">
+            <div class="q-text" id="q-text"></div>
+        </div>
+    </div>
+    <div class="options-grid" id="opts-grid"></div>
+</div>
+
+<!-- ══ RESULT ══ -->
+<div class="screen" id="screen-result">
+    <div class="card">
+        <div class="result-label" id="r-label">🎉 Tvoje povolání budoucnosti je…</div>
+        <span class="result-emoji-big" id="r-emoji"></span>
+        <div class="result-banner" id="r-banner"></div>
+        <div class="result-job" id="r-job"></div>
+        <div class="result-desc" id="r-desc"></div>
+        <div class="result-stars">⭐ ⭐ ⭐</div>
+        <div class="btn-row">
+            <button class="btn" onclick="restartGame()">🔄 Hrát znovu</button>
+        </div>
+        <!-- dislike section -->
+        <div class="dislike-row" id="dislike-row">
+            <div class="dislike-hint">Tohle tě nevzrušuje? Nevadí – zkusíme to lépe!</div>
+            <button class="btn-dislike" onclick="startExtraRound()">❌ Tohle nechci! Zkus to znovu…</button>
+        </div>
+    </div>
+</div>
+
+<!-- ENCOURAGEMENT -->
+<div class="enc-overlay" id="enc"></div>
+<!-- CONFETTI -->
+<div class="confetti-wrap" id="confetti"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  PROFESSIONS  (15 základních + 4 nová)
+// ══════════════════════════════════════════
+const PROF = {
+    // ── základní ──────────────────────────
+    pilot:        { title:"Pilot / Astronaut",       emoji:"✈️",  banner:"Mistr nebes!",            desc:"Ty máš srdce dobrodruha a miluješ výšky! Budeš pilotovat letadla nebo rakety do vesmíru. Celý svět bude pod tebou a ty budeš cestovat kamkoliv budeš chtít. Hvězdy na tebe čekají!" },
+    hasic:        { title:"Hasič",                   emoji:"🚒",  banner:"Opravdový hrdina!",        desc:"Ty jsi statečný ochránce! Budeš zachraňovat lidi z ohně a nebezpečí. Nebudeš se bát ničeho a všichni tě budou obdivovat za tvoji neuvěřitelnou odvahu. Budeš ten, na koho se volá v každé nouzi!" },
+    lekar:        { title:"Lékař",                   emoji:"🏥",  banner:"Zachránce životů!",        desc:"Máš zlaté srdce a chceš pomáhat lidem! Budeš lékař, který léčí nemocné a vrací jim zdraví. Lidé ti budou vděční a ty budeš vědět, že tvoje práce je ta nejdůležitější na světě!" },
+    vedec:        { title:"Vědec / Výzkumník",        emoji:"🔬",  banner:"Génius vědy!",             desc:"Ty jsi superhrdina vědy! Budeš zkoumat tajemství přírody a možná vynajdeš něco, co změní celý svět. Jednou bude tvoje jméno v každé učebnici a děti se o tobě budou učit ve škole!" },
+    programator:  { title:"Programátor",              emoji:"💻",  banner:"Technologický mág!",       desc:"Ty máš mozek jako superpočítač! Budeš programovat hry, aplikace nebo třeba roboty. Budeš jako kouzelník – ale místo kouzelné hůlky budeš mít klávesnici. Celý digitální svět bude tvůj!" },
+    umelec:       { title:"Umělec / Malíř",           emoji:"🎨",  banner:"Tvůrce krásy!",            desc:"Tvoje ruce tvoří krásu! Budeš malovat, kreslit nebo navrhovat věci, které nikdo před tebou neviděl. Lidé budou stát před tvými díly s otevřenou pusou a říkat: 'Kdo to vymyslel?'" },
+    hudebnik:     { title:"Hudebník / Zpěvák",        emoji:"🎸",  banner:"Rockstar!",                desc:"Hudba je ve tvé krvi! Budeš hrát na nástroje nebo zpívat a celý svět bude tančit. Na tvoje koncerty přijdou tisíce lidí a tvoje melodie budou znít v každém rádiu!" },
+    herec:        { title:"Herec / Youtuber",         emoji:"🎬",  banner:"Narozený bavič!",           desc:"Ty jsi narozený bavič! Budeš hrát v filmech, seriálech nebo natáčet videa pro miliony diváků. Lidé se budou smát a plakat díky tobě – a ty to budeš milovat!" },
+    sportovec:    { title:"Sportovní šampion",        emoji:"⚽",  banner:"Šampion!",                 desc:"Ty jsi sportovní superhrdina! Budeš závodit, hrát nebo trénovat a dosáhnout na zlaté medaile. Stadiony ti budou fandit a tvoje fotka bude na každém plakátu!" },
+    zachranar:    { title:"Záchranář",                emoji:"🚑",  banner:"Hrdina v záchrance!",      desc:"Ty jsi hrdina v modrém! Budeš pomáhat lidem v nouzi, přijíždět jako první a zachraňovat životy. Každý den budeš dělat tu nejdůležitější práci a lidé tě budou nazývat svým záchrancem!" },
+    veterinar:    { title:"Veterinář",                emoji:"🐾",  banner:"Doktor zvířat!",            desc:"Zvířata tě milují! Budeš léčit psy, kočky a třeba i lvy nebo orly. Každý tvůj pacient ti poděkuje po svém – lízáním, mňoukáním nebo radostným vrčením!" },
+    pruzkumnik:   { title:"Průzkumník / Cestovatel",  emoji:"🗺️", banner:"Odvážný dobrodruh!",       desc:"Ty jsi narozený dobrodruh! Budeš objevovat nová místa, prozkoumávat džungle, hory i moře. Každý den pro tebe bude nové dobrodružství a svět bude stále čekat na tvůj příchod!" },
+    podnikatel:   { title:"Podnikatel / Šéf",         emoji:"💼",  banner:"Budoucí šéf!",             desc:"Ty máš mozek na byznys! Budeš zakládat firmy, vymýšlet nové nápady a stát se velkým šéfem. Pod tebou bude pracovat spousta lidí a tvoje firma bude slavná po celém světě!" },
+    ucitel:       { title:"Učitel",                   emoji:"📚",  banner:"Mistr vědomostí!",         desc:"Ty máš dar předávat vědomosti! Budeš učit děti, pomáhat jim poznávat svět a stát se jejich oblíbeným učitelem. Na tebe tvoji žáci nikdy nezapomenou – ani za dvacet let!" },
+    inzenyr:      { title:"Inženýr / Vynálezce",      emoji:"🔧",  banner:"Génius vynálezů!",         desc:"Ty jsi génius vynálezů! Budeš navrhovat stroje, stavět mosty nebo programovat roboty. Tvoje nápady změní způsob, jakým svět funguje – a lidé budou říkat: 'To vymyslel on!'" },
+    // ── nová povolání ─────────────────────
+    sefpolicisty: { title:"Šéf policistů",            emoji:"👮",  banner:"Velitel spravedlnosti!",   desc:"Ty jsi narozený velitel! Budeš řídit celou policii, sestavovat týmy a dávat rozkazy. Největší zloduchy ve městě chytíš díky chytrým plánům a všichni tě budou poslouchat – protože ty jsi TEN šéf!" },
+    bagrista:     { title:"Řidič bagru / Strojník",   emoji:"🚜",  banner:"Král strojů!",             desc:"Ty miluješ velké, mocné stroje! Budeš řídit obrovské bagry, buldozery a jeřáby. Budeš kopat tunely, stavět silnice a tvoje práce bude vidět všude kolem. Celé město budeš budovat ty!" },
+    vojak:        { title:"Voják",                    emoji:"🪖",  banner:"Hrdina vlasti!",           desc:"Ty jsi opravdový hrdina vlasti! Budeš chránit svou zemi, trénovat s nejlepšími vojáky světa a plnit tajné mise. Máš odvahu, disciplínu a sílu – a celý národ bude na tebe hrdý!" },
+    stavitel:     { title:"Stavitel",                 emoji:"🏗️", banner:"Mistr stavby!",            desc:"Ty jsi mistr stavby! Budeš navrhovat a budovat domy, školy, mosty a stadiony. Zanecháš stopu ve svém městě navždy – protože to, co postavíš, bude stát stovky let a každý bude vědět, kdo to postavil!" }
+};
+
+// ══════════════════════════════════════════
+//  HLAVNÍ OTÁZKY (10 nepřímých – RIASEC)
+// ══════════════════════════════════════════
+const QS = [
+    {
+        text: "Kdybys mohl mít jednu superschopnost, jakou bys chtěl?",
+        opts: [
+            { emoji:"🦅", text:"Létat vysoko nad oblaky",            scores:{ pilot:3, pruzkumnik:1 } },
+            { emoji:"💪", text:"Být nejsilnější na světě",            scores:{ sportovec:3, hasic:1 } },
+            { emoji:"🔬", text:"Znát odpověď na každou otázku",       scores:{ vedec:3, programator:1 } },
+            { emoji:"✏️", text:"Čím se dotknu, to se stane krásným",  scores:{ umelec:3, hudebnik:1 } }
+        ]
+    },
+    {
+        text: "Kamarád si poranil koleno. Co uděláš jako první?",
+        opts: [
+            { emoji:"🩺", text:"Pečlivě ho ošetřím a převáži",           scores:{ lekar:3, zachranar:1 } },
+            { emoji:"😂", text:"Rozesměji ho, aby zapomněl na bolest",   scores:{ herec:3, ucitel:1 } },
+            { emoji:"🐕", text:"Zavolám psa, aby ho rozveselil",         scores:{ veterinar:3, zachranar:1 } },
+            { emoji:"💨", text:"Poběžím pro pomoc jako blesk",           scores:{ zachranar:3, hasic:1 } }
+        ]
+    },
+    {
+        text: "Co by bylo v tvém vysněném pokoji?",
+        opts: [
+            { emoji:"🔬", text:"Tajná laboratoř s experimenty",  scores:{ vedec:3, inzenyr:1 } },
+            { emoji:"🎸", text:"Pódium s nástroji a reflektory", scores:{ hudebnik:3, herec:1 } },
+            { emoji:"🏅", text:"Tréninkový prostor a posilovna", scores:{ sportovec:3, hasic:1 } },
+            { emoji:"🖥️", text:"Superpočítač a roboti",          scores:{ programator:3, inzenyr:1 } }
+        ]
+    },
+    {
+        text: "Kdybys byl zvíře, jaké bys byl?",
+        opts: [
+            { emoji:"🦁", text:"Lev – vedu tlupu a chráním ostatní",    scores:{ podnikatel:3, hasic:1 } },
+            { emoji:"🦉", text:"Sova – pozoruji a přemýšlím",           scores:{ vedec:3, programator:1 } },
+            { emoji:"🐬", text:"Delfín – pomáhám všem kolem sebe",      scores:{ zachranar:2, lekar:2 } },
+            { emoji:"🦋", text:"Motýl – létám tam, kde ještě nikdo nebyl", scores:{ pruzkumnik:3, pilot:1 } }
+        ]
+    },
+    {
+        text: "Co bys postavil, kdyby ses mohl postavit cokoliv?",
+        opts: [
+            { emoji:"🚀", text:"Obrovskou raketu do vesmíru",      scores:{ pilot:3, vedec:1 } },
+            { emoji:"🏥", text:"Velkou nemocnici pro zvířata",      scores:{ veterinar:3, lekar:1 } },
+            { emoji:"🎬", text:"Hollywoodské filmové studio",       scores:{ herec:3, umelec:1 } },
+            { emoji:"🏗️", text:"Obří most nebo fantastickou věž",  scores:{ inzenyr:3, pruzkumnik:1 } }
+        ]
+    },
+    {
+        text: "Jaká část dobrodružného příběhu tě nejvíce baví?",
+        opts: [
+            { emoji:"⚔️", text:"Hrdina skáče do ohně a zachraňuje ostatní", scores:{ hasic:3, zachranar:1 } },
+            { emoji:"🗺️", text:"Objev tajemné neznámé země",               scores:{ pruzkumnik:3, pilot:1 } },
+            { emoji:"🎵", text:"Slavnostní oslava hrdinů s hudbou",          scores:{ hudebnik:3, herec:1 } },
+            { emoji:"📚", text:"Moudrý učitel naučí hrdinu vše potřebné",    scores:{ ucitel:3, vedec:1 } }
+        ]
+    },
+    {
+        text: "Kdybys mohl pomáhat lidem, jak bys to dělal?",
+        opts: [
+            { emoji:"💊", text:"Vynalézal bych léky a léčil nemocné",              scores:{ lekar:3, vedec:1 } },
+            { emoji:"💻", text:"Psal bych programy, které usnadní život",          scores:{ programator:3, inzenyr:1 } },
+            { emoji:"🎨", text:"Maloval bych obrazy a dělal lidem radost",         scores:{ umelec:3, hudebnik:1 } },
+            { emoji:"💼", text:"Vybudoval bych firmu, která zaměstná tisíce lidí", scores:{ podnikatel:3, ucitel:1 } }
+        ]
+    },
+    {
+        text: "Co bys dělal jako první při velké katastrofě?",
+        opts: [
+            { emoji:"🚒", text:"Vrhl bych se do akce a zachraňoval lidi",  scores:{ hasic:3, zachranar:1 } },
+            { emoji:"🔬", text:"Zkoumal bych příčinu a vymyslel řešení",   scores:{ vedec:3, programator:1 } },
+            { emoji:"📺", text:"Natočil bych to a ukázal celému světu",    scores:{ herec:3, umelec:1 } },
+            { emoji:"🚑", text:"Ošetřoval bych raněné a pomáhal jim",      scores:{ zachranar:3, lekar:1 } }
+        ]
+    },
+    {
+        text: "Jak by vypadal tvůj ideální výlet?",
+        opts: [
+            { emoji:"✈️", text:"Na palubě letadla – já pilotuji!",       scores:{ pilot:3, pruzkumnik:1 } },
+            { emoji:"🏫", text:"Navštívil bych školu v cizí zemi",        scores:{ ucitel:3, pruzkumnik:1 } },
+            { emoji:"⚽", text:"Na velkém sportovním turnaji",             scores:{ sportovec:3, podnikatel:1 } },
+            { emoji:"🔧", text:"V dílně, kde vyrábějí auta nebo roboty",  scores:{ inzenyr:3, programator:1 } }
+        ]
+    },
+    {
+        text: "Kdybys byl hrdina ve videohře, kým bys byl?",
+        opts: [
+            { emoji:"🗺️", text:"Odvážný průzkumník neznámých světů",        scores:{ pruzkumnik:3, pilot:1 } },
+            { emoji:"🐾", text:"Kouzelník, který léčí a ochraňuje zvířata", scores:{ veterinar:3, lekar:1 } },
+            { emoji:"🎵", text:"Rockstar, jehož hudba pohybuje horami",      scores:{ hudebnik:3, herec:1 } },
+            { emoji:"💻", text:"Hacker ovládající technologii myšlenkami",   scores:{ programator:3, vedec:1 } }
+        ]
+    }
+];
+
+// ══════════════════════════════════════════
+//  DOPLŇKOVÉ OTÁZKY – 3 nepřímé
+//  (vedou k: sefpolicisty, bagrista, vojak, stavitel)
+// ══════════════════════════════════════════
+const EXTRA_QS = [
+    {
+        text: "Kdybys mohl řídit jakékoliv vozidlo nebo stroj, co by to bylo?",
+        opts: [
+            { emoji:"🚔", text:"Policejní auto s řvoucím majákem",      scores:{ sefpolicisty:3, zachranar:1 } },
+            { emoji:"🚜", text:"Obrovský žlutý bagr nebo buldozer",     scores:{ bagrista:3, stavitel:1 } },
+            { emoji:"🪖", text:"Vojenský tank nebo bojový vrtulník",    scores:{ vojak:3, hasic:1 } },
+            { emoji:"🏗️", text:"Obří stavební jeřáb nad městem",       scores:{ stavitel:3, inzenyr:1 } }
+        ]
+    },
+    {
+        text: "Kdybys měl svůj vlastní tým, co by tvůj tým dělal?",
+        opts: [
+            { emoji:"🚔", text:"Chytali bychom zločince a chránili město",   scores:{ sefpolicisty:3, vojak:1 } },
+            { emoji:"⛏️", text:"Kopali bychom tunely a budovali silnice",    scores:{ bagrista:3, stavitel:1 } },
+            { emoji:"🪖", text:"Chránili bychom zemi před každým nepřítelem", scores:{ vojak:3, sefpolicisty:1 } },
+            { emoji:"🏠", text:"Stavěli bychom domy a budovy pro všechny",    scores:{ stavitel:3, bagrista:1 } }
+        ]
+    },
+    {
+        text: "Kdybys byl hrdina akčního filmu, co bys dělal?",
+        opts: [
+            { emoji:"🚓", text:"Pronásledoval bych největší zloduchy a zjednal pořádek", scores:{ sefpolicisty:3, vojak:1 } },
+            { emoji:"🚧", text:"Svým bagrem bych odstranil trosky a zachránil lidi",       scores:{ bagrista:3, stavitel:1 } },
+            { emoji:"🎖️", text:"Byl bych na tajné misi a chránil celou zemi",            scores:{ vojak:3, sefpolicisty:1 } },
+            { emoji:"🏰", text:"Postavil bych pevnost, která zachrání celé město",        scores:{ stavitel:3, inzenyr:1 } }
+        ]
+    }
+];
+
+const ENC_MSGS = ["Super! 🌟","Výborně! 🎉","Skvělé! 💪","Báječné! 🚀","Úžasné! ⭐","Perfektní! 🏆","Wow! 😮","Geniální! 🧠","Fantastické! 🦸","Hurá! 🎊"];
+const EXTRA_ENC = ["Aha! 🤔","Zajímavé! 🔍","Hmm… 🧐"];
+
+// ══ STAV HRY ══
+let currentQ    = 0;
+let scores      = {};
+let extraRound  = false;
+let extraQ      = 0;
+let extraScores = {};
+
+// ══ HELPERS ══
+function initScores()  { scores = {};      Object.keys(PROF).forEach(k => scores[k]      = 0); }
+function initExtra()   { extraScores = {}; Object.keys(PROF).forEach(k => extraScores[k] = 0); }
+
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display='none'; });
+    const el = document.getElementById(id);
+    el.style.display = 'block';
+    void el.offsetWidth;
+    el.classList.add('active');
+}
+
+// ══ START ══
+function startGame() {
+    initScores(); initExtra();
+    currentQ = 0; extraRound = false; extraQ = 0;
+    showScreen('screen-question');
+    renderQuestion();
+}
+
+// ══ RENDER ══
+function renderQuestion() {
+    const q    = extraRound ? EXTRA_QS[extraQ] : QS[currentQ];
+    const done = extraRound ? extraQ            : currentQ;
+    const total= extraRound ? EXTRA_QS.length   : QS.length;
+    const pct  = Math.round((done / total) * 100);
+
+    const fill = document.getElementById('prog-fill');
+    fill.style.width = pct + '%';
+    fill.className   = 'progress-fill' + (extraRound ? ' extra' : '');
+    document.getElementById('prog-label').textContent = done + ' / ' + total;
+
+    document.getElementById('q-counter').textContent =
+        (extraRound ? '🔍 Upřesňující otázka ' : 'Otázka ') + (done + 1) + ' z ' + total;
+
+    // extra banner & mascot
+    document.getElementById('extra-banner').className = 'extra-banner' + (extraRound ? ' show' : '');
+    document.getElementById('mascot-sm').textContent   = extraRound ? '🕵️' : '🧑‍🚀';
+    document.getElementById('speech-bubble').className = 'speech-bubble' + (extraRound ? ' extra' : '');
+
+    document.getElementById('q-text').textContent = q.text;
+
+    const grid = document.getElementById('opts-grid');
+    grid.innerHTML = '';
+    q.opts.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn opt-' + i;
+        btn.innerHTML = '<span class="opt-emoji">' + opt.emoji + '</span>'
+                      + '<span class="opt-text">'  + opt.text  + '</span>';
+        btn.addEventListener('click', () => pickAnswer(opt.scores, btn));
+        grid.appendChild(btn);
+    });
+}
+
+// ══ PICK ANSWER ══
+function pickAnswer(optScores, btn) {
+    document.querySelectorAll('.opt-btn').forEach(b => {
+        b.style.opacity = '.55'; b.style.pointerEvents = 'none';
+    });
+    btn.classList.add('chosen'); btn.style.opacity = '1';
+
+    if (extraRound) {
+        Object.entries(optScores).forEach(([k,v]) => { extraScores[k] = (extraScores[k]||0) + v; });
+    } else {
+        Object.entries(optScores).forEach(([k,v]) => { scores[k] = (scores[k]||0) + v; });
+    }
+
+    const msgs = extraRound ? EXTRA_ENC : ENC_MSGS;
+    const idx  = extraRound ? extraQ : currentQ;
+    const enc  = document.getElementById('enc');
+    enc.textContent = msgs[idx % msgs.length];
+    enc.classList.add('show');
+
+    setTimeout(() => {
+        enc.classList.remove('show');
+        if (extraRound) {
+            extraQ++;
+            if (extraQ >= EXTRA_QS.length) showResult(true);
+            else renderQuestion();
+        } else {
+            currentQ++;
+            if (currentQ >= QS.length) showResult(false);
+            else renderQuestion();
+        }
+    }, 900);
+}
+
+// ══ SHOW RESULT ══
+function showResult(isExtra) {
+    const sc = isExtra ? extraScores : scores;
+    const winner = Object.keys(sc).reduce((a,b) => sc[a] >= sc[b] ? a : b);
+    const p = PROF[winner];
+
+    document.getElementById('r-label').textContent = isExtra
+        ? '🔍 Teď už víme! Tvoje povolání je…'
+        : '🎉 Tvoje povolání budoucnosti je…';
+    document.getElementById('r-emoji').textContent  = p.emoji;
+    document.getElementById('r-banner').textContent = '🏆 ' + p.banner;
+    document.getElementById('r-job').textContent    = p.title;
+    document.getElementById('r-desc').textContent   = p.desc;
+
+    // Po extra kole skryjeme tlačítko "nechci"
+    document.getElementById('dislike-row').style.display = isExtra ? 'none' : '';
+
+    showScreen('screen-result');
+    launchConfetti();
+}
+
+// ══ EXTRA ROUND ══
+function startExtraRound() {
+    initExtra();
+    extraRound = true; extraQ = 0;
+    showScreen('screen-question');
+    renderQuestion();
+}
+
+// ══ RESTART ══
+function restartGame() {
+    document.getElementById('confetti').innerHTML = '';
+    startGame();
+}
+
+// ══ CONFETTI ══
+function launchConfetti() {
+    const wrap   = document.getElementById('confetti');
+    wrap.innerHTML = '';
+    const colors = ['#FFD700','#FF4040','#2D8FFF','#28D47A','#9B59F6','#FF8C42','#FF6B6B','#38D9A9'];
+    for (let i = 0; i < 90; i++) {
+        const cf = document.createElement('div');
+        cf.className = 'cf';
+        cf.style.cssText = [
+            'left:'               + (Math.random()*100)     + 'vw',
+            'top:-20px',
+            'width:'              + (8 + Math.random()*12)  + 'px',
+            'height:'             + (8 + Math.random()*12)  + 'px',
+            'background:'         + colors[Math.floor(Math.random()*colors.length)],
+            'animation-duration:' + (1.4 + Math.random()*2) + 's',
+            'animation-delay:'    + (Math.random()*1.8)      + 's',
+            'border-radius:'      + (Math.random()>.5 ? '50%' : '3px')
+        ].join(';');
+        wrap.appendChild(cf);
+    }
+    setTimeout(() => wrap.innerHTML = '', 6000);
+}
+</script>
+</body>
+</html>
