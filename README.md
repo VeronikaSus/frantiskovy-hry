@@ -60,11 +60,6 @@ Hra běží na [qmedia.cz/franti/](https://qmedia.cz/franti/) - stačí otevří
 2. Otevři jej v libovolném webovém prohlížeči
 3. Žádná instalace ani server není potřeba
 
----
-
-## 👩‍💻 O autorce
-
-Vytvořeno Veronikou Susnovou - web developer se zaměřením na interaktivní vzdělávací aplikace.
 
 ---
 
