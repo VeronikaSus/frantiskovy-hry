@@ -6,7 +6,7 @@ Sbírka interaktivních vzdělávacích her pro děti vytvořených s láskou k 
 
 ### 1. Frantiho Garáž - Počítání do 20
 
-**[🚀 Hrát online](https://qmedia.cz/franti/)**
+**[🚀 Hrát online](https://qmedia.cz/franti/)** | **[📂 Otevřít hru](./frantiho-garaz.html)** (ke stažení z tohoto repozitáře)
 
 Interaktivní hra pro procvičování sčítání do 20. Děti plní zakázky v Frantiho garáži a učí se počítat hravou formou.
 
