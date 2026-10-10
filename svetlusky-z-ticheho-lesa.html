@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Světlušky z Tichého lesa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: noční les, jedna obrazovka hry. Nahoře lišta, pod ní scéna: postavička + bublina, sklenice se světluškami | rovnice + číselník */
+:root{
+  --night:#0d2225; --night2:#123236; --moss:#1f4743; --moss2:#2a5b52;
+  --glow:#ffd46e; --glow2:#fff4cc; --paper:#f4ecd8; --ink:#1c2a28; --ink2:#55634f;
+  --muted:#a6c0b4; --leaf:#a6dc8f; --warm:#f2a46e; --bark:#7a5638;
+  --f-display:"Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"Nunito","Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:radial-gradient(ellipse at 50% -10%,#1d4a49 0%,var(--night) 55%,#081719 100%) fixed;background-color:var(--night);color:var(--paper);font-family:var(--f-body);font-size:18px;line-height:1.45}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--glow);outline-offset:3px}
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding-inline:16px;padding-block:10px 40px}
+
+/* ambient */
+.ambient{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.ambient i{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--glow);box-shadow:0 0 10px 3px rgba(255,212,110,.45);opacity:.5;animation:drift 9s ease-in-out infinite alternate}
+@keyframes drift{0%{transform:translate(0,0);opacity:.15}50%{opacity:.7}100%{transform:translate(30px,-40px);opacity:.25}}
+
+/* top bar */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-block:6px 14px}
+.brand{font:700 1.05rem/1 var(--f-display);color:var(--muted);letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(255,212,110,.1);border:1px solid rgba(255,212,110,.3);font-weight:700;font-size:.95rem;font-variant-numeric:tabular-nums}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--glow);box-shadow:0 0 8px 3px rgba(255,212,110,.5);flex:none}
+.mini{background:transparent;border:1px solid rgba(244,236,216,.25);color:var(--paper);border-radius:999px;padding:6px 14px;font-size:.9rem;font-weight:700}
+.mini:hover{border-color:var(--glow)}
+
+/* buttons */
+.btn{font:800 1.25rem/1 var(--f-display);padding:.75em 1.5em .65em;min-height:58px;border-radius:999px;border:0;background:var(--glow);color:var(--ink);box-shadow:0 5px 0 #b8892c,0 0 30px rgba(255,212,110,.25);transition:transform .1s}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #b8892c}
+.btn.ghost{background:transparent;color:var(--paper);border:2px solid rgba(244,236,216,.4);box-shadow:none}
+.btn.ghost:hover{border-color:var(--glow)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+/* talk */
+.talk{display:flex;gap:14px;align-items:flex-start}
+.portrait{flex:none;width:86px;height:86px;border-radius:50%;background:radial-gradient(circle at 50% 40%,#2f6157,#183a36);border:3px solid rgba(255,212,110,.35);display:grid;place-items:center;overflow:hidden}
+.portrait svg{width:86%;height:86%}
+.portrait.big{width:120px;height:120px}
+.bubble{position:relative;flex:1;min-width:0;background:var(--paper);color:var(--ink);border-radius:20px;padding:12px 18px 14px;min-height:92px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.bubble::before{content:"";position:absolute;left:-10px;top:30px;border:10px solid transparent;border-right-color:var(--paper);border-left:0}
+.bubble p{margin:.25em 0}
+.who{font:700 .78rem/1 var(--f-display);text-transform:uppercase;letter-spacing:.09em;color:var(--ink2)}
+.say{color:#5a3a1e}
+.ask{font-weight:800;font-size:1.18rem}
+.linkbtn{margin-top:6px;background:transparent;border:2px solid #c9b994;color:var(--ink);border-radius:999px;padding:6px 14px;font-weight:800;font-size:.95rem}
+
+/* intro */
+.intro{max-width:720px;margin:0 auto;display:grid;gap:24px;padding-top:12px}
+.title{font:800 clamp(2.5rem,8vw,4.4rem)/.95 var(--f-display);margin:0;color:var(--glow2);text-shadow:0 0 28px rgba(255,212,110,.55);text-wrap:balance}
+.title small{display:block;font-size:.42em;color:var(--muted);text-shadow:none;letter-spacing:.04em;margin-top:.5em;font-weight:700}
+.how{background:rgba(10,30,32,.55);border:1px solid rgba(244,236,216,.12);border-radius:20px;padding:16px 18px}
+.how h2{font:700 .85rem/1 var(--f-display);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 12px}
+.how ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.how li{background:rgba(255,255,255,.04);border-radius:14px;padding:10px 12px}
+.how b{display:block;font:800 1.5rem/1.1 var(--f-display);color:var(--glow);font-variant-numeric:tabular-nums}
+.how span{font-size:.92rem;color:var(--muted)}
+
+/* map */
+.mapwrap{display:grid;gap:18px}
+.map{position:relative;width:100%;aspect-ratio:1000/560;border-radius:24px;overflow:hidden;border:1px solid rgba(244,236,216,.12);background:#0b1e20}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.node{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;color:var(--paper);padding:0}
+.node .ring{width:clamp(40px,7vw,64px);height:clamp(40px,7vw,64px);border-radius:50%;display:grid;place-items:center;background:#173734;border:3px solid rgba(244,236,216,.25);overflow:hidden}
+.node .ring svg{width:82%;height:82%;position:static}
+.node .nm{font:700 clamp(.7rem,1.6vw,.95rem)/1.1 var(--f-display);background:rgba(8,23,25,.8);padding:3px 8px;border-radius:999px;white-space:nowrap}
+.node.locked{opacity:.45;cursor:default}
+.node.done .ring{border-color:var(--glow);box-shadow:0 0 22px 4px rgba(255,212,110,.45)}
+.node.current .ring{border-color:var(--glow);animation:beacon 1.6s ease-in-out infinite}
+@keyframes beacon{0%,100%{box-shadow:0 0 0 0 rgba(255,212,110,.55)}50%{box-shadow:0 0 0 12px rgba(255,212,110,0)}}
+
+/* station */
+.station{max-width:760px;margin:0 auto;display:grid;gap:20px;padding-top:8px}
+.place{font:800 clamp(2rem,6vw,3rem)/1 var(--f-display);margin:0;color:var(--glow2)}
+.eyebrow{font:700 .85rem/1 var(--f-display);text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 6px}
+.facts{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.facts li{background:rgba(10,30,32,.55);border:1px solid rgba(244,236,216,.12);border-radius:14px;padding:10px 14px}
+.facts b{color:var(--glow);font-family:var(--f-display);font-size:1.15em;font-variant-numeric:tabular-nums}
+
+/* play */
+.play{display:grid;grid-template-columns:minmax(0,1fr) minmax(290px,350px);grid-template-areas:"talk talk" "stage work";gap:16px}
+.a-talk{grid-area:talk}.stage{grid-area:stage;position:relative;min-width:0}.work{grid-area:work;min-width:0}
+@media (max-width:840px){.play{grid-template-columns:minmax(0,1fr);grid-template-areas:"talk" "stage" "work"}}
+.scene{position:relative;border-radius:24px;padding:18px 14px;background:linear-gradient(180deg,#183f3d,#102c2b);border:1px solid rgba(244,236,216,.1);--cell:clamp(26px,5.4vw,46px)}
+.jars{display:flex;gap:22px;justify-content:center;flex-wrap:wrap}
+.jarbox{display:flex;flex-direction:column;align-items:center;gap:6px}
+.jar{position:relative;padding:16px 12px 12px;border:3px solid rgba(214,238,232,.32);border-top:0;border-radius:8px 8px 24px 24px;background:rgba(200,235,228,.05);transition:border-color .4s,box-shadow .4s}
+.jar::before{content:"";position:absolute;left:-7px;right:-7px;top:-9px;height:11px;border-radius:6px;background:var(--bark)}
+.jar.full{border-color:var(--glow);box-shadow:0 0 30px rgba(255,212,110,.28),inset 0 0 20px rgba(255,212,110,.1)}
+.jar.empty{opacity:.55}
+.grid5{display:grid;grid-template-columns:repeat(5,var(--cell));gap:6px}
+.cell,.mslot{width:var(--cell);height:var(--cell);border-radius:50%;position:relative}
+.cell{border:2px dashed rgba(214,238,232,.26)}
+.mslot.ring{border:2px solid rgba(255,212,110,.3)}
+.cell[data-label]::after,.mslot[data-label]::after{content:attr(data-label);position:absolute;inset:0;display:grid;place-items:center;font:800 .85rem/1 var(--f-display);color:var(--warm)}
+.cell.pulse,.mslot.pulse{border:2px solid var(--warm);animation:cellp 1s ease-in-out infinite}
+@keyframes cellp{0%,100%{box-shadow:0 0 0 0 rgba(242,164,110,.6)}50%{box-shadow:0 0 0 6px rgba(242,164,110,0)}}
+.cap{font:700 .92rem/1 var(--f-display);color:var(--muted);font-variant-numeric:tabular-nums}
+.cap b{color:var(--glow)}
+.meadow{margin-top:20px;padding:12px 10px 14px;border-radius:18px;background:rgba(130,180,110,.1);display:flex;flex-direction:column;align-items:center;gap:8px}
+.meadow.sub{background:rgba(110,160,200,.12)}
+.flies{position:absolute;inset:0;pointer-events:none;z-index:2}
+.fly{position:absolute;left:0;top:0;border-radius:50%;pointer-events:auto;cursor:pointer;display:grid;place-items:center;font:800 .8rem/1 var(--f-display);color:var(--ink);background:radial-gradient(circle at 40% 35%,#fffdf0,var(--glow) 45%,#e5a536 100%);box-shadow:0 0 10px 3px rgba(255,212,110,.55),0 0 26px 8px rgba(255,212,110,.16);transition:transform .55s cubic-bezier(.3,.7,.3,1.15),opacity .4s,filter .4s;animation:twinkle 2.6s ease-in-out infinite}
+.fly.home{filter:saturate(.75) brightness(.85)}
+.fly.pulse{animation:flyp .9s ease-in-out infinite}
+@keyframes twinkle{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}
+@keyframes flyp{0%,100%{box-shadow:0 0 10px 3px rgba(255,212,110,.55)}50%{box-shadow:0 0 0 7px rgba(242,164,110,.7),0 0 26px 10px rgba(255,212,110,.3)}}
+.noanim .fly{transition:none}
+.cover{position:absolute;inset:0;z-index:5;border-radius:24px;background:radial-gradient(circle at 50% 45%,#16302f,#091719);display:grid;place-items:center;text-align:center;padding:20px}
+.cover p{max-width:30ch;margin:10px auto 16px;color:var(--muted)}
+.cover svg{width:70px;height:90px}
+
+.work{background:rgba(10,30,32,.6);border:1px solid rgba(244,236,216,.12);border-radius:24px;padding:16px 16px 18px;display:flex;flex-direction:column;gap:14px}
+.prog{display:flex;gap:8px;justify-content:center;align-items:center}
+.prog i{width:14px;height:14px;border-radius:50%;border:2px solid rgba(244,236,216,.3)}
+.prog i.on{background:var(--glow);border-color:var(--glow);box-shadow:0 0 8px 2px rgba(255,212,110,.5)}
+.prog i.now{border-color:var(--glow)}
+.eq{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1.05em .35em;font:800 clamp(1.7rem,4.4vw,2.2rem)/1 var(--f-display);padding:4px 0 18px;font-variant-numeric:tabular-nums}
+.eqg{display:inline-flex;align-items:center;gap:.3em;white-space:nowrap}
+.slot{position:relative;min-width:1.85em;height:1.65em;padding:.12em .15em 0;border-radius:12px;border:3px dashed rgba(244,236,216,.38);background:rgba(0,0,0,.2);display:inline-grid;place-items:center;color:var(--paper)}
+.slot.active{border-style:solid;border-color:var(--glow);box-shadow:0 0 0 4px rgba(255,212,110,.16)}
+.slot.ok{border-style:solid;border-color:var(--leaf);color:var(--leaf)}
+.slot.nope{border-color:var(--warm);color:var(--warm);animation:wob .45s}
+@keyframes wob{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.slot .sc{position:absolute;top:calc(100% + 5px);left:50%;transform:translateX(-50%);font:700 .7rem/1 var(--f-body);color:var(--muted);white-space:nowrap}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.key{height:60px;border:0;border-radius:16px;background:var(--moss);color:var(--paper);font:800 1.75rem/1 var(--f-display);box-shadow:0 4px 0 #0c2624;transition:transform .08s}
+.key:active{transform:translateY(3px);box-shadow:0 1px 0 #0c2624}
+.key.back{font-size:1.1rem;background:#183a37}
+.key.go{background:var(--glow);color:var(--ink);font-size:1.05rem;box-shadow:0 4px 0 #b8892c}
+.after{display:grid;gap:10px}
+
+/* end */
+.end{max-width:760px;margin:0 auto;display:grid;gap:22px;padding-top:8px}
+.big{font:800 clamp(2rem,6vw,3.2rem)/1.05 var(--f-display);margin:0;color:var(--glow2);text-shadow:0 0 24px rgba(255,212,110,.45);text-wrap:balance}
+.skills{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.skills li{display:flex;gap:14px;align-items:center;background:rgba(10,30,32,.6);border:1px solid rgba(244,236,216,.12);border-radius:16px;padding:12px 16px}
+.skills .ex{font:800 1.4rem/1 var(--f-display);color:var(--glow);white-space:nowrap;font-variant-numeric:tabular-nums}
+@media (max-width:480px){.skills li{flex-direction:column;align-items:flex-start;gap:6px}.portrait{width:64px;height:64px}.bubble::before{top:20px}.key{height:54px}}
+
+@media (prefers-reduced-motion:reduce){
+  .fly{transition:none;animation:none}.ambient i,.node.current .ring,.cell.pulse,.mslot.pulse,.fly.pulse{animation:none}
+}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<div class="ambient" id="ambient" aria-hidden="true"></div>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><span class="dot"></span>Světlušky z Tichého lesa</div>
+    <div class="tools">
+      <span class="pill" id="counter"><span class="dot"></span><span id="cnt">0 světlušek v lese</span></span>
+      <button class="mini" id="mapBtn" hidden>Mapa</button>
+      <button class="mini" id="soundBtn">Zvuk: zapnutý</button>
+    </div>
+  </header>
+  <main id="screen"></main>
+</div>
+
+<script>
+(function(){
+const $=(s,el=document)=>el.querySelector(s);
+const $$=(s,el=document)=>Array.from(el.querySelectorAll(s));
+const screenEl=$('#screen');
+
+/* ---------- Czech helpers ---------- */
+const sv=n=>n===1?'světluška':(n>=2&&n<=4)?'světlušky':'světlušek';
+const odlet=n=>n===1?'odletěla':(n>=2&&n<=4)?'odletěly':'odletělo';
+const seq=(a,b)=>{const o=[];for(let i=a;i<=b;i++)o.push(i);return o.join(', ');};
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+/* ---------- sound ---------- */
+let ac=null,soundOn=true;
+function tone(f,d=.2,delay=0,v=.07){if(!soundOn)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const t=ac.currentTime+delay,o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d+.05);}catch(e){}}
+const tick=()=>tone(1320,.09,0,.025);
+const chime=()=>{tone(784,.25);tone(1047,.32,.09)};
+const fanfare=()=>[523,659,784,1047].forEach((f,i)=>tone(f,.4,i*.11,.06));
+$('#soundBtn').onclick=()=>{soundOn=!soundOn;$('#soundBtn').textContent='Zvuk: '+(soundOn?'zapnutý':'vypnutý');};
+
+/* ---------- ambient fireflies ---------- */
+(function(){let h='';for(let i=0;i<16;i++){h+=`<i style="left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${-Math.random()*9}s;animation-duration:${7+Math.random()*6}s"></i>`;}$('#ambient').innerHTML=h;})();
+
+/* ---------- portraits ---------- */
+function hedgehogSpikes(){let pts=[];const cx=46,cy=74,steps=13;for(let k=0;k<=steps*2;k++){const ang=Math.PI-(k/(steps*2))*Math.PI*0.86;const r=k%2===0?36:27;pts.push((cx+Math.cos(ang)*r).toFixed(1)+','+(cy-Math.sin(ang)*r).toFixed(1));}return pts.join(' ');}
+const ART={
+owl:`<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M28 30 L21 12 L40 24 Z M72 30 L79 12 L60 24 Z" fill="#6b4a2f"/><ellipse cx="50" cy="58" rx="31" ry="35" fill="#8a6440"/><ellipse cx="50" cy="69" rx="19" ry="22" fill="#d9b98a"/><path d="M41 64q4 3 8 0M51 64q4 3 8 0M44 73q4 3 8 0M46 82q4 3 8 0" stroke="#a9845a" stroke-width="2" fill="none"/><circle cx="37" cy="42" r="12" fill="#f6efd9"/><circle cx="63" cy="42" r="12" fill="#f6efd9"/><circle cx="38" cy="43" r="6" fill="#1c1a16"/><circle cx="62" cy="43" r="6" fill="#1c1a16"/><circle cx="39.8" cy="41" r="2" fill="#fff"/><circle cx="63.8" cy="41" r="2" fill="#fff"/><path d="M45.5 51 L54.5 51 L50 58 Z" fill="#f2a46e"/></svg>`,
+hedgehog:`<svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="86" rx="38" ry="5" fill="#000" opacity=".2"/><polygon points="${hedgehogSpikes()}" fill="#4f3624"/><path d="M14 78 Q16 46 48 44 Q74 46 80 66 L80 80 Z" fill="#6e4d33"/><path d="M58 52 Q80 48 93 68 Q86 79 62 80 Z" fill="#e6c79c"/><circle cx="93" cy="68" r="4.2" fill="#2a1d14"/><circle cx="73" cy="60" r="3.4" fill="#2a1d14"/><circle cx="74" cy="59" r="1.1" fill="#fff"/><ellipse cx="68" cy="69" rx="4" ry="2.4" fill="#f2a46e" opacity=".6"/><path d="M32 82v5M62 82v5" stroke="#3b2a1d" stroke-width="5" stroke-linecap="round"/></svg>`,
+squirrel:`<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M34 88 C6 82 2 44 22 28 C36 17 54 27 46 42 C39 54 26 52 31 67 C34 76 44 82 34 88Z" fill="#b9582a"/><ellipse cx="61" cy="70" rx="18" ry="20" fill="#d9773d"/><ellipse cx="65" cy="74" rx="9" ry="13" fill="#f3d3a8"/><path d="M55 30 L57 14 L66 27 Z M66 28 L73 14 L76 30Z" fill="#b9582a"/><circle cx="65" cy="41" r="15" fill="#d9773d"/><circle cx="71" cy="39" r="3.2" fill="#1c1a16"/><circle cx="72" cy="38" r="1" fill="#fff"/><circle cx="80" cy="45" r="2.3" fill="#3a2418"/><ellipse cx="73" cy="64" rx="5" ry="6" fill="#9a6a3a"/><path d="M67 60h12q-1-5-6-5q-5 0-6 5z" fill="#5a3e2a"/></svg>`,
+badger:`<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="23" cy="34" r="9" fill="#3a3d3b"/><circle cx="77" cy="34" r="9" fill="#3a3d3b"/><path d="M50 22 C80 22 88 50 78 72 C70 88 58 92 50 92 C42 92 30 88 22 72 C12 50 20 22 50 22Z" fill="#8f938e"/><ellipse cx="27" cy="64" rx="9" ry="13" fill="#f2efe6"/><ellipse cx="73" cy="64" rx="9" ry="13" fill="#f2efe6"/><path d="M37 28 C30 46 34 70 43 90 L47 91 C42 68 42 46 46 26Z" fill="#26292a"/><path d="M63 28 C70 46 66 70 57 90 L53 91 C58 68 58 46 54 26Z" fill="#26292a"/><path d="M50 22 C45 40 44 66 47 91 L53 91 C56 66 55 40 50 22Z" fill="#f2efe6"/><circle cx="41" cy="55" r="2.6" fill="#fff"/><circle cx="59" cy="55" r="2.6" fill="#fff"/><ellipse cx="50" cy="86" rx="6.5" ry="4.2" fill="#1b1b1b"/></svg>`
+};
+const portrait=(k,big)=>`<div class="portrait${big?' big':''}">${ART[k]}</div>`;
+
+/* ---------- stations ---------- */
+const STATIONS=[
+ {name:'Paseka',who:'Ježek Bodlinka',animal:'hedgehog',mode:'add',visual:'tap',xy:[180,410],
+  intro:'Na mé pasece se světlušky rozletěly po louce. Do sklenice se jich vejde přesně 10. Pomůžeš mi je posbírat? Vždycky nejdřív naplníme jednu sklenici až do desíti.',
+  thanks:'Bodlinka má na pasece zase světlo. Moc ti děkuje!'},
+ {name:'Starý dub',who:'Veverka Zrzka',animal:'squirrel',mode:'add',visual:'show',xy:[390,215],
+  intro:'Ve větvích starého dubu blikají světlušky na všech stranách. Ty už víš, jak na to: nejdřív doplnit do desíti, potom přidat zbytek. Tentokrát zkus prázdná místa spočítat jen očima.',
+  thanks:'Zrzka teď ve větvích vidí každý oříšek. Děkuje ti!'},
+ {name:'Jezevčí nora',who:'Jezevec Bručoun',animal:'badger',mode:'add',visual:'lantern',xy:[625,395],
+  intro:'U mé nory je tma jako v pytli. Lucernu ti půjčím, ale možná ji ani nebudeš potřebovat. Zkus si sklenici s desítkou představit v hlavě.',
+  thanks:'U Bručounovy nory je zase vidět. Bručoun spokojeně bručí.'},
+ {name:'Sovina věž',who:'Sova Hedvika',animal:'owl',mode:'sub',visual:'show',xy:[855,150],
+  intro:'Les zase svítí. Některé světlušky se teď chtějí vrátit domů k potoku. Tady se počítá obráceně: nejdřív vyprázdníme neplnou sklenici, potom bereme z plné.',
+  thanks:'Světlušky doletěly domů k potoku. Hedvika ti děkuje za pomoc.'}
+];
+const PER=4;
+
+/* ---------- state ---------- */
+let G;
+function newGame(){G={done:[false,false,false,false],fireflies:0,records:[],used:new Set(),adapt:'normal',streak:0,screen:'intro'};updateCounter();}
+function updateCounter(){$('#cnt').textContent=`${G.fireflies} ${sv(G.fireflies)} v lese`;}
+function setScreen(name){G.screen=name;$('#mapBtn').hidden=!(name==='play'||name==='station');window.scrollTo({top:0});}
+$('#mapBtn').onclick=()=>renderMap();
+
+/* ---------- problems ---------- */
+function genAdd(s,k,adapt){
+  const c=[];for(let a=2;a<=9;a++)for(let b=2;b<=9;b++)if(a+b>10)c.push({a,b});
+  let f;
+  if(s===0) f=k===0?(q=>q.a===9&&q.b<=4):(q=>q.a>=8);
+  else if(s===1) f=adapt==='easy'?(q=>q.a>=8&&q.b<=6):(q=>q.a>=6&&q.a<=8);
+  else { if(adapt==='easy') f=q=>q.a>=8&&q.b<=6; else if(k===1) f=q=>q.a>=5&&q.a<q.b; else if(adapt==='hard') f=q=>q.a>=5&&q.a<=7&&q.b>=6; else f=q=>q.a>=5; }
+  let pool=c.filter(f);const fresh=pool.filter(q=>!G.used.has(q.a+'+'+q.b));if(fresh.length)pool=fresh;
+  const q=pick(pool);G.used.add(q.a+'+'+q.b);
+  const x=10-q.a;return {mode:'add',a:q.a,b:q.b,x,y:q.b-x,r:q.a+q.b};
+}
+function genSub(k,adapt){
+  const c=[];for(let m=11;m<=18;m++)for(let n=2;n<=9;n++){const x=m-10,y=n-x;if(y>=1)c.push({m,n,x,y,r:m-n});}
+  const f=k===0?(q=>q.m<=13&&q.n<=5):adapt==='easy'?(q=>q.m<=14&&q.n<=6):(()=>true);
+  let pool=c.filter(f);const fresh=pool.filter(q=>!G.used.has(q.m+'-'+q.n));if(fresh.length)pool=fresh;
+  const q=pick(pool);G.used.add(q.m+'-'+q.n);return Object.assign({mode:'sub'},q);
+}
+
+/* ---------- intro ---------- */
+function renderIntro(){
+  setScreen('intro');
+  screenEl.innerHTML=`<section class="intro">
+    <h1 class="title">Světlušky<br>z Tichého lesa<small>Noční výprava pro Františka</small></h1>
+    <div class="talk">${portrait('owl')}<div class="bubble"><p class="who">Sova Hedvika</p>
+      <p>Ahoj, Františku! Dnes v noci se v Tichém lese rozprchly světlušky a les potemněl.</p>
+      <p>Světlušky nejraději bydlí ve sklenicích, v každé jich je přesně deset. Pomůžeš mi je posbírat a vrátit lesu světlo?</p></div></div>
+    <div class="how"><h2>Jak se v lese počítá</h2><ol>
+      <li><b>9 + 1 = 10</b><span>Nejdřív doplníš sklenici do desíti.</span></li>
+      <li><b>6 = 1 + 5</b><span>Druhé číslo si rozložíš na dvě části.</span></li>
+      <li><b>10 + 5 = 15</b><span>K plné sklenici přidáš zbytek.</span></li>
+    </ol></div>
+    <div class="row"><button class="btn" id="go">Vydat se do lesa</button></div>
+  </section>`;
+  $('#go').onclick=()=>renderMap();
+}
+
+/* ---------- map ---------- */
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function currentIdx(){for(let i=0;i<3;i++)if(!G.done[i])return i;return G.done[3]?-1:3;}
+function mapSVG(){
+  const r=rng(11);const pts=[[40,530],...STATIONS.map(s=>s.xy)];
+  let trees=[];
+  for(let i=0;i<70;i++){const x=r()*1000,y=40+r()*520,s=22+r()*34;
+    if(pts.some(p=>Math.hypot(p[0]-x,p[1]-y)<85))continue;trees.push({x,y,s,c:['#163a35','#1b453e','#11302d'][i%3]});}
+  trees.sort((a,b)=>a.y-b.y);
+  const T=trees.map(t=>`<rect x="${(t.x-3).toFixed(0)}" y="${t.y.toFixed(0)}" width="6" height="${(t.s*.28).toFixed(0)}" fill="#33261b"/><path d="M${t.x.toFixed(0)} ${(t.y-t.s*1.7).toFixed(0)} L${(t.x+t.s*.75).toFixed(0)} ${t.y.toFixed(0)} L${(t.x-t.s*.75).toFixed(0)} ${t.y.toFixed(0)} Z" fill="${t.c}"/>`).join('');
+  let d=`M${pts[0][0]} ${pts[0][1]}`;
+  for(let i=1;i<pts.length-1;i++){const m=[(pts[i][0]+pts[i+1][0])/2,(pts[i][1]+pts[i+1][1])/2];d+=` Q${pts[i][0]} ${pts[i][1]} ${m[0]} ${m[1]}`;}
+  d+=` L${pts[pts.length-1][0]} ${pts[pts.length-1][1]}`;
+  const lit=Math.min(90,Math.round(G.fireflies/1.9));const r2=rng(5);let L='';
+  for(let i=0;i<90;i++){const x=(r2()*980+10).toFixed(0),y=(r2()*540+10).toFixed(0);
+    L+=i<lit?`<circle cx="${x}" cy="${y}" r="9" fill="#ffd46e" opacity=".35" filter="url(#gl)"/><circle cx="${x}" cy="${y}" r="3" fill="#fff4cc"/>`:`<circle cx="${x}" cy="${y}" r="2" fill="#5d7468" opacity=".35"/>`;}
+  const glowAmt=Math.min(.55,G.fireflies/320);
+  return `<svg viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+   <defs><filter id="gl"><feGaussianBlur stdDeviation="4"/></filter>
+   <radialGradient id="sky" cx="50%" cy="20%" r="80%"><stop offset="0" stop-color="#1f4a48"/><stop offset="1" stop-color="#0a1b1d"/></radialGradient>
+   <radialGradient id="warm" cx="50%" cy="60%" r="70%"><stop offset="0" stop-color="#ffd46e" stop-opacity="${glowAmt}"/><stop offset="1" stop-color="#ffd46e" stop-opacity="0"/></radialGradient></defs>
+   <rect width="1000" height="560" fill="url(#sky)"/><circle cx="905" cy="62" r="26" fill="#f4ecd8" opacity=".85"/><circle cx="917" cy="54" r="24" fill="#1a403e"/>
+   <path d="M0 470 Q250 430 500 470 T1000 450 V560 H0Z" fill="#0f2826"/>
+   <rect width="1000" height="560" fill="url(#warm)"/>
+   ${T}
+   <path d="${d}" fill="none" stroke="#c9b48a" stroke-opacity=".5" stroke-width="7" stroke-linecap="round" stroke-dasharray="2 16"/>
+   ${L}</svg>`;
+}
+function renderMap(){
+  setScreen('map');const cur=currentIdx();
+  const nodes=STATIONS.map((s,i)=>{const st=G.done[i]?'done':i===cur?'current':'locked';
+    return `<button class="node ${st}" data-i="${i}" style="left:${s.xy[0]/10}%;top:${s.xy[1]/5.6}%" ${st==='locked'?'aria-disabled="true"':''} aria-label="${s.name}"><span class="ring">${ART[s.animal]}</span><span class="nm">${s.name}${i===3?' · výzva navíc':''}</span></button>`;}).join('');
+  let msg,btns;
+  const done=G.done.filter(Boolean).length;
+  if(cur===0){msg='Na mapě bliká první místo: Paseka. Ježek Bodlinka už na tebe čeká.';btns=`<button class="btn" id="goSt">Jít na Paseku</button>`;}
+  else if(cur===1){msg='Paseka zase svítí! Cesta pokračuje ke Starému dubu.';btns=`<button class="btn" id="goSt">Jít ke Starému dubu</button>`;}
+  else if(cur===2){msg='Ještě Jezevčí nora a celý les bude zase svítit.';btns=`<button class="btn" id="goSt">Jít k Jezevčí noře</button>`;}
+  else if(cur===3){msg=`Tichý les zase svítí! Vrátil jsi do něj ${G.fireflies} ${sv(G.fireflies)}. Hlavní úkol je splněný. Na Sovině věži čeká ještě výzva navíc: počítání obráceně, odčítání přes desítku. Chceš ji zkusit, nebo výpravu ukončíme?`;
+    btns=`<button class="btn" id="goSt">Vylézt na Sovinu věž</button><button class="btn ghost" id="finish">Ukončit výpravu</button>`;}
+  else {msg='Celý les svítí a světlušky jsou doma.';btns=`<button class="btn" id="finish">Dokončit výpravu</button>`;}
+  screenEl.innerHTML=`<section class="mapwrap">
+    <div class="map" id="map">${mapSVG()}${nodes}</div>
+    <div class="talk">${portrait('owl')}<div class="bubble"><p class="who">Sova Hedvika</p><p class="ask">${msg}</p><div class="row" style="margin-top:10px">${btns}</div></div></div>
+  </section>`;
+  $$('.node').forEach(n=>n.onclick=()=>{const i=+n.dataset.i;if(i===cur)renderStation(i);});
+  if($('#goSt'))$('#goSt').onclick=()=>renderStation(cur);
+  if($('#finish'))$('#finish').onclick=()=>renderEnd();
+}
+
+/* ---------- station intro / done ---------- */
+function renderStation(i){
+  setScreen('station');const s=STATIONS[i];
+  screenEl.innerHTML=`<section class="station">
+    <div><p class="eyebrow">${i===3?'Výzva navíc':'Místo '+(i+1)+' ze 3'}</p><h1 class="place">${s.name}</h1></div>
+    <div class="talk">${portrait(s.animal,true)}<div class="bubble"><p class="who">${s.who}</p><p>${s.intro}</p></div></div>
+    <div class="row"><button class="btn" id="start">Pustit se do toho</button></div></section>`;
+  $('#start').onclick=()=>{G.station=i;G.k=0;nextProblem();};
+}
+function renderStationDone(){
+  const i=G.station,s=STATIONS[i];G.done[i]=true;
+  const recs=G.records.filter(r=>r.station===i);
+  const clean=recs.filter(r=>r.errors===0).length;
+  const back=recs.filter(r=>r.selfCorrected).length;
+  const facts=[];
+  if(s.mode==='add'){const n=recs.reduce((t,r)=>t+r.p.r,0);facts.push(`Na místo se vrátilo <b>${n}</b> ${sv(n)}.`);}
+  else facts.push(`Domů k potoku jsi doprovodil ${recs.length} hejna světlušek.`);
+  if(clean===recs.length)facts.push(`Všechny příklady jsi spočítal bez jediné nápovědy.`);
+  else if(back>0)facts.push(`Když něco napoprvé nesedělo, zkusil jsi to znovu a dopočítal jsi to. Takhle se učí opravdoví počtáři.`);
+  if(s.visual==='lantern'){const nl=recs.filter(r=>!r.lantern&&!r.forcedLight).length;if(nl>0)facts.push(`Bez lucerny, jen v hlavě, jsi spočítal <b>${nl}</b> z ${recs.length} příkladů.`);}
+  if(i===1&&clean>0)facts.push(`Prázdná místa ve sklenici už umíš spočítat očima, bez přenášení světlušek.`);
+  setScreen('station');
+  const next=i<2?`<button class="btn" id="cont">Zpátky na mapu</button>`:i===2?`<button class="btn" id="cont">Podívat se na les</button>`:`<button class="btn" id="cont">Dokončit výpravu</button>`;
+  screenEl.innerHTML=`<section class="station">
+    <div><p class="eyebrow">Hotovo</p><h1 class="place">${s.name} svítí</h1></div>
+    <div class="talk">${portrait(s.animal,true)}<div class="bubble"><p class="who">${s.who}</p><p class="ask">${s.thanks}</p></div></div>
+    <ul class="facts">${facts.map(f=>`<li>${f}</li>`).join('')}</ul>
+    <div class="row">${next}</div></section>`;
+  fanfare();
+  $('#cont').onclick=()=>{i===3?renderEnd():renderMap();};
+}
+
+/* ---------- play ---------- */
+function nextProblem(){
+  const s=STATIONS[G.station];
+  G.p=s.mode==='add'?genAdd(G.station,G.k,G.adapt):genSub(G.k,G.adapt);
+  G.step=0;G.input='';G.solved=false;G.busy=false;
+  G.rec={station:G.station,p:G.p,errors:0,stepErr:[0,0,0],lantern:false,forcedLight:false,selfCorrected:false};
+  G.revealed=s.visual!=='lantern';
+  if(s.visual==='lantern'&&G.adapt==='easy'){G.revealed=true;G.rec.forcedLight=true;}
+  G.tapOK=s.visual==='tap'||s.mode==='sub';
+  renderPlay();
+}
+function question(){const p=G.p;
+  if(p.mode==='add')return[`Ve sklenici je ${p.a} ${sv(p.a)}. Kolik jich chybí do plné desítky?`,`Sklenice je plná. Kolik světlušek zůstalo na louce?`,`Jedna plná sklenice je 10. Kolik světlušek je dohromady?`][G.step];
+  return[`Domů ${p.n<=4?'chtějí':'chce'} odletět ${p.n} ${sv(p.n)}. Nejdřív poletí ty z neplné sklenice. Kolik jich v ní je?`,`Neplná sklenice je prázdná. Kolik světlušek musí ještě odletět z plné sklenice?`,`Kolik světlušek zůstalo ve sklenici?`][G.step];}
+function bubble(say,extra){const s=STATIONS[G.station];
+  $('#bubble').innerHTML=`<p class="who">${s.who}</p>${say?`<p class="say">${say}</p>`:''}${G.solved?'':`<p class="ask">${question()}</p>`}${extra||''}`;
+  const e=$('#easier');if(e)e.onclick=()=>{G.adapt='easy';G.streak=0;nextProblem();};}
+
+function renderPlay(){
+  setScreen('play');const s=STATIONS[G.station],p=G.p;
+  const cells=l=>Array.from({length:10},(_,i)=>`<div class="cell" data-loc="${l}" data-i="${i}"></div>`).join('');
+  const ml=p.mode==='add'?'M':'H';
+  const ms=Array.from({length:10},(_,i)=>`<div class="mslot${p.mode==='sub'&&i<p.n?' ring':''}" data-loc="${ml}" data-i="${i}"></div>`).join('');
+  const keys=[1,2,3,4,5,6,7,8,9].map(n=>`<button class="key" data-k="${n}">${n}</button>`).join('')+`<button class="key back" data-k="back" aria-label="Smazat">Smazat</button><button class="key" data-k="0">0</button><button class="key go" data-k="ok">Hotovo</button>`;
+  screenEl.innerHTML=`<section class="play">
+   <div class="talk a-talk">${portrait(s.animal)}<div class="bubble" id="bubble" aria-live="polite"></div></div>
+   <div class="stage">
+     <div class="scene noanim" id="scene">
+       <div class="jars">
+         <div class="jarbox"><div class="jar" id="jarA"><div class="grid5">${cells('A')}</div></div><div class="cap" id="capA"></div></div>
+         <div class="jarbox"><div class="jar" id="jarB"><div class="grid5">${cells('B')}</div></div><div class="cap" id="capB"></div></div>
+       </div>
+       <div class="meadow ${p.mode}"><div class="cap" id="capM"></div><div class="grid5">${ms}</div></div>
+       <div class="flies" id="flies"></div>
+     </div>
+     ${G.revealed?'':`<div class="cover" id="cover"><div><svg viewBox="0 0 70 90" aria-hidden="true"><path d="M25 8h20v6H25z" fill="#7a5638"/><path d="M35 0v8" stroke="#7a5638" stroke-width="3"/><rect x="14" y="14" width="42" height="56" rx="8" fill="none" stroke="#a6c0b4" stroke-width="3"/><rect x="10" y="70" width="50" height="8" rx="3" fill="#7a5638"/><circle cx="35" cy="42" r="6" fill="#5d7468"/></svg><p>Lucerna je zhasnutá. Zkus si sklenici s desítkou představit v hlavě.</p><button class="btn ghost" id="lamp">Rozsvítit lucernu</button></div></div>`}
+   </div>
+   <div class="work">
+     <div class="prog" aria-label="Příklad ${G.k+1} ze ${PER}">${Array.from({length:PER},(_,i)=>`<i class="${i<G.k?'on':i===G.k?'now':''}"></i>`).join('')}</div>
+     <div class="eq" id="eq" aria-live="polite"></div>
+     <div class="pad" id="pad">${keys}</div>
+     <div class="after" id="after" hidden><button class="btn" id="next">${G.k<PER-1?'Další příklad':'Hotovo, jdeme dál'}</button></div>
+   </div></section>`;
+  // flies
+  G.flies=[];const fl=$('#flies');
+  const add=(loc,i)=>{const el=document.createElement('div');el.className='fly';el.setAttribute('aria-hidden','true');fl.appendChild(el);G.flies.push({loc,i,el});};
+  if(p.mode==='add'){for(let i=0;i<p.a;i++)add('A',i);for(let i=0;i<p.b;i++)add('M',i);}
+  else{for(let i=0;i<10;i++)add('A',i);for(let i=0;i<p.x;i++)add('B',i);}
+  snap();
+  const sc=$('#scene');
+  sc.addEventListener('click',e=>{const el=e.target.closest('.fly');if(!el)return;const f=G.flies.find(q=>q.el===el);if(f)onFlyTap(f);});
+  $('#pad').addEventListener('mousedown',e=>e.preventDefault());
+  $('#pad').addEventListener('click',e=>{const k=e.target.closest('.key');if(k)press(k.dataset.k);});
+  $('#next').onclick=goNext;
+  if($('#lamp'))$('#lamp').onclick=()=>{G.rec.lantern=true;reveal();bubble('Lucerna svítí. Teď vidíš celou sklenici.');};
+  renderEq();
+  let say='';
+  if(G.k===0){say=[`Klepni na světlušky na louce a sleduj, kam poletí.`,`Zkus prázdná místa ve sklenici spočítat jen očima.`,`Když budeš chtít, lucernu si rozsviť. Není to žádná ostuda.`,`Klepni na světlušky v neplné sklenici a pošli je domů k potoku.`][G.station];}
+  if(G.rec.forcedLight)say='Tenhle si vezmeme s rozsvícenou lucernou.';
+  bubble(say);
+  layout();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>sc.classList.remove('noanim')));
+}
+function reveal(){G.revealed=true;G.tapOK=true;const c=$('#cover');if(c)c.remove();layout();}
+
+const cnt=l=>G.flies.filter(f=>f.loc===l).length;
+function nextFree(l){for(let i=0;i<10;i++)if(!G.flies.some(f=>f.loc===l&&f.i===i))return i;return 9;}
+function slotEl(l,i){return $(`#scene [data-loc="${l}"][data-i="${i}"]`);}
+function snap(){G.snap=G.flies.map(f=>({loc:f.loc,i:f.i}));}
+function restore(){let changed=false;G.flies.forEach((f,j)=>{if(f.loc!==G.snap[j].loc||f.i!==G.snap[j].i){f.loc=G.snap[j].loc;f.i=G.snap[j].i;changed=true;}});if(changed)layout();}
+function layout(){
+  const sc=$('#scene');if(!sc)return;const sr=sc.getBoundingClientRect();
+  const c0=$('#scene .cell');const cw=c0.getBoundingClientRect().width;const fs=Math.max(16,cw*.74);
+  G.flies.forEach(f=>{const s=slotEl(f.loc,f.i);if(!s)return;const r=s.getBoundingClientRect();
+    const x=r.left-sr.left+r.width/2-fs/2,y=r.top-sr.top+r.height/2-fs/2;
+    f.el.style.width=f.el.style.height=fs+'px';f.el.style.transform=`translate(${x}px,${y}px)`;f.el.classList.toggle('home',f.loc==='H');});
+  const p=G.p,a=cnt('A'),b=cnt('B');
+  $('#capA').innerHTML=a===10?`<b>10</b> · plná desítka`:`${a} z 10`;
+  $('#capB').textContent=b?`${b}`:'prázdná';
+  $('#jarA').classList.toggle('full',a===10);$('#jarB').classList.toggle('empty',b===0);
+  $('#capM').innerHTML=p.mode==='add'?`Na louce: <b>${cnt('M')}</b>`:`Domů k potoku: <b>${cnt('H')}</b> z ${p.n}`;
+}
+function moveFly(f,l){f.i=nextFree(l);f.loc=l;layout();tick();}
+function animateMoves(list,l,then){G.busy=true;list.forEach((f,j)=>setTimeout(()=>moveFly(f,l),j*150));setTimeout(()=>{G.busy=false;snap();then&&then();},list.length*150+450);}
+
+function onFlyTap(f){
+  if(G.busy||G.solved)return;
+  if(!G.tapOK){bubble('Tady zkus prázdná místa spočítat jen očima. Kdyby to nešlo, pomůžu ti.');return;}
+  const p=G.p;clearMarks();
+  if(p.mode==='add'){
+    if(f.loc==='M'){moveFly(f,cnt('A')<10?'A':'B');}
+    else bubble('Tahle světluška už je ve sklenici. Klepni na některou na louce.');
+  }else{
+    if(cnt('H')>=p.n){bubble(`Domů už letí všech ${p.n}. Ostatní zůstávají ve sklenici.`);return;}
+    if(f.loc==='B')moveFly(f,'H');
+    else if(f.loc==='A'){if(cnt('B')>0)bubble('Nejdřív nech odletět světlušky z neplné sklenice.');else moveFly(f,'H');}
+  }
+}
+
+function renderEq(){
+  const p=G.p,vals=[p.x,p.y,p.r];
+  const caps=p.mode==='add'?['do desítky','zbytek','výsledek']:['k desítce','zbytek','výsledek'];
+  const slot=i=>{const v=i<G.step||G.solved?vals[i]:i===G.step?G.input:'';
+    return `<span class="slot ${i<G.step||G.solved?'ok':''} ${i===G.step&&!G.solved?'active':''}" id="slot${i}">${v===''?'&nbsp;':v}<span class="sc">${caps[i]}</span></span>`;};
+  const op=p.mode==='add'?'+':'−',A=p.mode==='add'?p.a:p.m,B=p.mode==='add'?p.b:p.n;
+  $('#eq').innerHTML=`<span class="eqg">${A} ${op} ${B} =</span><span class="eqg">${A} ${op} ${slot(0)} ${op} ${slot(1)}</span><span class="eqg">= ${slot(2)}</span>`;
+}
+function press(k){
+  if(G.solved||G.busy)return;
+  if(k==='back')G.input=G.input.slice(0,-1);
+  else if(k==='ok'){check();return;}
+  else{if(G.input.length>=2)return;G.input=(G.input==='0'?'':G.input)+k;}
+  renderEq();
+}
+function check(){
+  if(G.input===''){bubble('Napiš číslo do žlutého rámečku. Použij tlačítka s čísly.');return;}
+  const v=+G.input,exp=[G.p.x,G.p.y,G.p.r][G.step];
+  v===exp?onCorrect():onWrong(v);
+}
+
+function clearMarks(){$$('#scene .pulse').forEach(e=>e.classList.remove('pulse'));$$('#scene [data-label]').forEach(e=>e.removeAttribute('data-label'));G.flies.forEach(f=>f.el.textContent='');}
+const byI=list=>list.slice().sort((a,b)=>a.i-b.i);
+
+function onCorrect(){
+  const p=G.p,st=G.step;if(G.rec.stepErr[st]>0)G.rec.selfCorrected=true;
+  clearMarks();chime();G.step++;G.input='';
+  let say;
+  if(p.mode==='add'){
+    if(st===0){say=`Ano, ${p.a} a ${p.x} je 10. Sklenice je plná.`;const need=10-cnt('A');animateMoves(G.flies.filter(f=>f.loc==='M').slice(0,Math.max(0,need)),'A');}
+    else if(st===1){say=`Přesně. ${p.b} jsme rozložili na ${p.x} a ${p.y}.`;animateMoves(G.flies.filter(f=>f.loc==='M'),'B');}
+  }else{
+    if(st===0){say=`Ano. Z ${p.m} nejdřív odletí ${p.x} a zůstane přesně 10.`;animateMoves(G.flies.filter(f=>f.loc==='B'),'H');}
+    else if(st===1){say=`Přesně. ${p.n} jsme rozložili na ${p.x} a ${p.y}.`;const need=p.n-cnt('H');animateMoves(byI(G.flies.filter(f=>f.loc==='A')).reverse().slice(0,Math.max(0,need)),'H');}
+  }
+  if(G.step===3)return solved();
+  renderEq();bubble(say);
+}
+
+function onWrong(v){
+  const p=G.p,st=G.step;G.rec.errors++;const n=++G.rec.stepErr[st];
+  const s=$('#slot'+st);if(s)s.classList.add('nope');
+  setTimeout(()=>{G.input='';renderEq();},600);
+  let wasHidden=!G.revealed;if(wasHidden){reveal();}G.tapOK=true;
+  restore();clearMarks();
+  const open=pick(['Tohle číslo ještě nesedí.','Zkusíme to jinak.','Podíváme se na to spolu.']);
+  let pre=wasHidden?'Rozsvítil jsem ti lucernu, ať sklenici vidíš. ':'';
+  let msg='';
+  const empt=l=>Array.from({length:10},(_,i)=>i).filter(i=>!G.flies.some(f=>f.loc===l&&f.i===i)).map(i=>slotEl(l,i));
+  const label=(els,start)=>els.forEach((e,j)=>{if(e.classList.contains('fly'))e.textContent=start+j;else e.setAttribute('data-label',start+j);});
+  const pulse=els=>els.forEach(e=>e.classList.add('pulse'));
+  if(p.mode==='add'){
+    if(st===0){
+      const cells=empt('A');pulse(cells);
+      if(v===p.r)pre+=`${p.r} je výsledek celého příkladu, ten už možná znáš! Teď ale hledáme jen kousek do desítky. `;
+      else if(v===p.b)pre+=`${p.b} je celé druhé číslo. My ale nejdřív potřebujeme jen tolik, aby byla sklenice plná. `;
+      if(n===1)msg=`Sklenice má 10 míst a ${p.a} je už obsazených. Spočítej prázdná místa, nebo na louce klepej na světlušky, dokud nebude sklenice plná.`;
+      else if(n===2){label(cells,p.a+1);msg=`Počítej dál od ${p.a}. Ukazuj prstem na prázdná místa a říkej ${seq(p.a+1,10)}. Kolik čísel jsi řekl?`;}
+      else{label(cells,1);msg=`Prázdná místa jsem ti očísloval. Kolik jich je?`;}
+    }else if(st===1){
+      const fs=byI(G.flies.filter(f=>f.loc==='M'));pulse(fs.map(f=>f.el));
+      if(v===p.b)pre+=`${p.b} je všechno, co bylo na louce na začátku. Část už je ale ve sklenici. `;
+      if(n===1)msg=`Na louce bylo ${p.b} ${sv(p.b)}. ${p.x} ${odlet(p.x)} do sklenice. Kolik jich zůstalo na louce?`;
+      else{label(fs.map(f=>f.el),1);msg=n===2?`Rozkládáme ${p.b} na dvě části: ${p.b} = ${p.x} + ?. Světlušky na louce jsem očísloval.`:`Které číslo svítí na poslední světlušce na louce?`;}
+    }else{
+      const fs=byI(G.flies.filter(f=>f.loc==='B'));pulse(fs.map(f=>f.el));
+      if(v===p.y)pre+=`Nezapomeň na plnou sklenici, v ní je 10 světlušek. `;
+      if(n===1)msg=`V plné sklenici je 10 a ve druhé ${p.y}. Kolik je 10 a ${p.y}?`;
+      else{label(fs.map(f=>f.el),11);msg=`Začni u plné sklenice, to je 10. Pak počítej dál po světluškách ve druhé sklenici: 11, 12 a dál.`;}
+    }
+  }else{
+    if(st===0){
+      const fs=byI(G.flies.filter(f=>f.loc==='B'));pulse(fs.map(f=>f.el));
+      if(v===p.n)pre+=`${p.n} je, kolik jich odletí celkem. Teď hledáme jen ty z neplné sklenice. `;
+      if(n===1)msg=`Neplná sklenice je ta druhá. Spočítej světlušky v ní.`;
+      else{label(fs.map(f=>f.el),1);msg=`${p.m} je 10 a ještě kolik? Světlušky v neplné sklenici jsem očísloval.`;}
+    }else if(st===1){
+      const els=empt('H').filter(e=>+e.dataset.i<p.n);pulse(els);
+      if(n===1)msg=`Odletět má ${p.n} ${sv(p.n)}. ${p.x} už ${odlet(p.x)} domů. Kolik prázdných míst u potoka ještě zbývá?`;
+      else{label(els,1);msg=`${p.n} = ${p.x} + ?. Prázdná místa u potoka jsem očísloval. Můžeš na světlušky v plné sklenici i klepat.`;}
+    }else{
+      const fs=byI(G.flies.filter(f=>f.loc==='A'));pulse(fs.map(f=>f.el));
+      if(v===p.y)pre+=`${p.y} je, kolik jich odletělo. My hledáme, kolik jich zůstalo. `;
+      if(n===1)msg=`V plné sklenici bylo 10. ${p.y} ${odlet(p.y)}. Kolik jich ve sklenici zůstalo?`;
+      else{label(fs.map(f=>f.el),1);msg=`Světlušky, které zůstaly ve sklenici, jsem očísloval. Které číslo je poslední?`;}
+    }
+  }
+  const extra=n>=3?`<button class="linkbtn" id="easier">Dát si jednodušší příklad</button>`:'';
+  bubble(`${open} ${pre}${msg}`,extra);
+}
+
+function solved(){
+  const p=G.p,s=STATIONS[G.station],r=G.rec;G.solved=true;fanfare();
+  renderEq();$('#pad').hidden=true;$('#after').hidden=false;
+  const eq=p.mode==='add'?`${p.a} + ${p.b} = ${p.a} + ${p.x} + ${p.y} = ${p.r}.`:`${p.m} − ${p.n} = ${p.m} − ${p.x} − ${p.y} = ${p.r}.`;
+  let line;
+  if(r.errors===0){
+    if(s.visual==='lantern'&&!G.revealed)line='Celý příklad jsi spočítal v hlavě, bez lucerny.';
+    else if(s.visual==='lantern'&&r.lantern)line='Lucerna ti pomohla uvidět desítku a zbytek jsi spočítal sám. Dobrý nápad ji rozsvítit.';
+    else if(s.visual==='show'&&s.mode==='add')line='Spočítal jsi to očima, bez přenášení světlušek.';
+    else line=pick(['Všechny tři kroky jsi zvládl sám.','Nejdřív desítka, potom zbytek. Přesně takhle se to dělá.','Tenhle postup ti už jde.']);
+  }else line=pick(['Jedno číslo napoprvé nesedělo, tak jsi to zkusil znovu a našel jsi ho.','Nápověda ti ukázala cestu a dopočítal jsi to sám.','Tohle bylo náročnější. Pomohlo rozdělit si úkol na kroky.']);
+  if(p.mode==='add'){G.fireflies+=p.r;updateCounter();line+=` Do lesa se vrátilo dalších ${p.r} ${sv(p.r)}.`;}
+  bubble(`<strong>${eq}</strong> ${line}`);
+  G.records.push(r);
+  if(r.errors>=2){G.adapt='easy';G.streak=0;}else if(r.errors===1){G.adapt='normal';G.streak=0;}else{G.streak++;G.adapt=G.streak>=2?'hard':'normal';}
+  $('#next').focus({preventScroll:true});
+}
+function goNext(){G.k++;if(G.k<PER)nextProblem();else renderStationDone();}
+
+document.addEventListener('keydown',e=>{
+  if(G.screen!=='play')return;
+  if(G.solved){if(e.key==='Enter'&&!e.target.closest('button')){e.preventDefault();goNext();}return;}
+  if(/^[0-9]$/.test(e.key))press(e.key);
+  else if(e.key==='Backspace'){e.preventDefault();press('back');}
+  else if(e.key==='Enter'&&!e.target.closest('button:not(.key)')){e.preventDefault();press('ok');}
+});
+let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{const s=$('#scene');if(!s)return;s.classList.add('noanim');layout();requestAnimationFrame(()=>s.classList.remove('noanim'));},80);});
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(G.screen==='play'){const s=$('#scene');s.classList.add('noanim');layout();requestAnimationFrame(()=>s.classList.remove('noanim'));}});
+
+/* ---------- end ---------- */
+function renderEnd(){
+  setScreen('end');
+  const adds=G.records.filter(r=>r.p.mode==='add'),subs=G.records.filter(r=>r.p.mode==='sub');
+  const ex=adds.length?adds[adds.length-1].p:{a:9,b:6,x:1,y:5,r:15};
+  const skills=[[`${ex.a} + ${ex.x} = 10`,'Doplníš číslo do desítky.'],[`${ex.b} = ${ex.x} + ${ex.y}`,'Rozložíš číslo na dvě části.'],[`${ex.a} + ${ex.b} = ${ex.r}`,'Sečteš dvě čísla přes desítku.']];
+  if(subs.length){const q=subs[subs.length-1].p;skills.push([`${q.m} − ${q.n} = ${q.r}`,'Odečteš přes desítku, a to je výzva navíc.']);}
+  const clean=G.records.filter(r=>r.errors===0).length;
+  const hard=G.records.slice().sort((a,b)=>b.errors-a.errors)[0];
+  const notes=[];
+  if(clean>0)notes.push(`Bez jediné nápovědy jsi spočítal ${clean} ${clean===1?'příklad':clean<=4?'příklady':'příkladů'}.`);
+  if(hard&&hard.errors>=2){const q=hard.p;notes.push(`Nejvíc práce ti dal příklad ${q.mode==='add'?q.a+' + '+q.b:q.m+' − '+q.n}. Nevzdal ses a dopočítal jsi ho.`);}
+  screenEl.innerHTML=`<section class="end">
+    <h1 class="big">Do Tichého lesa jsi vrátil ${G.fireflies} ${sv(G.fireflies)}.</h1>
+    <div class="talk">${portrait('owl',true)}<div class="bubble"><p class="who">Sova Hedvika</p><p class="ask">Podívej, co dnes umíš.</p><p>Až příště uvidíš třeba 8 + 5, vzpomeň si na sklenici: nejdřív doplnit do desítky, potom přidat zbytek.</p></div></div>
+    <ul class="skills">${skills.map(s=>`<li><span class="ex">${s[0]}</span><span>${s[1]}</span></li>`).join('')}</ul>
+    ${notes.length?`<ul class="facts">${notes.map(n=>`<li>${n}</li>`).join('')}</ul>`:''}
+    <div class="row"><button class="btn" id="again">Nová výprava</button><button class="btn ghost" id="toMap">Podívat se na les</button></div></section>`;
+  fanfare();
+  $('#again').onclick=()=>{newGame();renderIntro();};
+  $('#toMap').onclick=()=>renderMap();
+}
+
+newGame();renderIntro();
+})();
+</script>
+</body>
+</html>
