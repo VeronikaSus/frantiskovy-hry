@@ -61,6 +61,26 @@ Příklady řeší ve třech krocích, například `9 + 6 = 9 + 1 + 5 = 15`: nej
 
 ---
 
+### 4. Frantiho fotbalová akademie ⚽
+
+**[🚀 Hrát online](https://veronikasus.github.io/frantiskovy-hry/frantiho-fotbalova-akademie.html)** (po zapnutí GitHub Pages) | **[📂 Otevřít hru](./frantiho-fotbalova-akademie.html)**
+
+Fotbalová hra na procvičování české abecedy (2. třída). Franta s číslem 7 kope na bránu, brankář několikrát chytí, a za každý gól dostane písmeno. Pak sestaví abecedu od A až po toto písmeno.
+
+**Hlavní funkce:**
+- 🎬 Filmový úvod: kamera projede stadion, Franta mluví českým hlasem a hýbe pusou, lze přeskočit
+- 🔤 Školní abeceda (34 písmen včetně Ch a písmen s háčkem, bez Á, É, Ů…)
+- 🎤 Diktování: písmena stačí říkat nahlas („á, bé, cé…“), zapíšou se hned a kurzor skočí dál; povely „smazat“ a „hotovo“
+- ⌨️ Psaní na klávesnici nebo klikání na písmena na obrazovce
+- 🧤 Brankář v každém kole několikrát chytí, potom padne gól: gajdy, dloubák, falš, do šibenice, k tyči
+- 📖 Krátké věty na přečtení v každém kole
+- 💡 Tři pokusy s nápovědou, nikdy žádné „špatně“
+- 🎁 Tajné překvapení na konci
+
+**Technologie:** Vanilla JavaScript, HTML5, CSS3, SVG, Web Audio, Web Speech API (pure frontend, single file)
+
+---
+
 ## 🎨 Design principy
 
 Všechny hry sdílí společné designové principy:
@@ -88,6 +108,13 @@ Hra běží na [qmedia.cz/franti/](https://qmedia.cz/franti/) - stačí otevří
 2. Otevři jej v libovolném webovém prohlížeči
 3. Žádná instalace ani server není potřeba (pro hezčí písmo je dobré být online)
 
+
+### Frantiho fotbalová akademie
+1. Otevři hru přes odkaz **Hrát online** (GitHub Pages) v prohlížeči **Chrome** nebo **Edge**
+2. Při prvním diktování povol mikrofon a zvol „Povolit vždy“ / „Při každé návštěvě“
+3. Diktování potřebuje internet (rozpoznávání řeči běží u Googlu / Microsoftu)
+
+Pozn.: Když se soubor otevře přímo z počítače (`file://`), Chrome si povolení mikrofonu nepamatuje a ptá se znovu.
 
 ---
 

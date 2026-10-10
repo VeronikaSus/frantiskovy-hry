@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Frantiho fotbalová akademie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Lilita+One&display=swap" rel="stylesheet">
+<style>
+/* Layout: celoobrazovkový večerní stadion (SVG svět, kamera = animovaný viewBox). Nahoře HUD, pod ním čtecí kartička, dole vysouvací panel s odpovědí. Jednotný noční vzhled. */
+:root{
+  --night:#060f26; --navy:#0c1c40; --glass:rgba(9,20,48,.86); --line:rgba(255,255,255,.16);
+  --gold:#ffc23a; --gold-d:#b97d00; --red:#e5383b; --white:#ffffff; --ink:#0b1630;
+  --ok:#2fd18b; --warn:#ff9f43; --info:#5aa9ff; --muted:#a8b7d9;
+  --f-display:"Lilita One","Arial Rounded MT Bold","Trebuchet MS",sans-serif;
+  --f-body:"Baloo 2","Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--night);color:var(--white);font-family:var(--f-body);overflow:hidden}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+#app{position:fixed;inset:0;overflow:hidden;background:var(--night)}
+#world{position:absolute;inset:0;width:100%;height:100%;display:block}
+#fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:30}
+#vig{position:absolute;inset:0;pointer-events:none;z-index:2;background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(2,6,20,.55) 100%)}
+
+/* cinematic */
+.bar{position:absolute;left:0;right:0;height:11vh;background:#000;z-index:20;transition:transform .9s cubic-bezier(.7,0,.2,1);pointer-events:none}
+.bar.top{top:0;transform:translateY(-100%)}.bar.bot{bottom:0;transform:translateY(100%)}
+.cine .bar{transform:none}
+#subs{position:absolute;left:50%;bottom:calc(11vh + 18px);transform:translateX(-50%);z-index:22;max-width:min(900px,calc(100% - 32px));text-align:center;font:800 clamp(1.3rem,2.6vw,2rem)/1.25 var(--f-body);text-shadow:0 2px 10px rgba(0,0,0,.9);padding:6px 18px;border-radius:14px;background:rgba(0,0,0,.35)}
+#subs span{transition:color .15s}
+#subs span.on{color:var(--gold)}
+#skip{position:absolute;top:calc(11vh + 14px);right:16px;z-index:25;background:rgba(0,0,0,.45);color:#fff;border:1.5px solid rgba(255,255,255,.35);border-radius:999px;padding:8px 18px;font-weight:800;font-size:1rem}
+#skip:hover{border-color:var(--gold)}
+#lower3{position:absolute;left:clamp(16px,4vw,60px);bottom:calc(11vh + 22px);z-index:22;display:flex;align-items:stretch;border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:l3in .7s cubic-bezier(.2,.9,.2,1)}
+#lower3 .live{background:var(--red);padding:10px 14px;font:1.05rem/1 var(--f-display);display:flex;align-items:center;gap:8px;letter-spacing:.06em}
+#lower3 .live i{width:9px;height:9px;border-radius:50%;background:#fff;animation:blink 1s infinite}
+#lower3 .tx{background:rgba(255,255,255,.95);color:var(--ink);padding:6px 16px;display:flex;flex-direction:column;justify-content:center}
+#lower3 b{font:1.25rem/1.05 var(--f-display)}#lower3 small{font-weight:700;color:#4b5a7a;font-size:.85rem}
+@keyframes l3in{from{transform:translateX(-30px);opacity:0}}
+@keyframes blink{50%{opacity:.25}}
+
+/* gate */
+#gate{position:absolute;inset:0;z-index:40;display:grid;place-items:center;padding-inline:16px;background:radial-gradient(ellipse at 50% 60%,rgba(6,15,38,.35),rgba(6,15,38,.85))}
+.gcard{text-align:center;display:grid;gap:18px;justify-items:center;max-width:640px}
+.crest{width:120px;height:120px;filter:drop-shadow(0 10px 30px rgba(255,194,58,.35))}
+.gtitle{margin:0;font:clamp(2.6rem,7vw,4.6rem)/.95 var(--f-display);text-shadow:0 6px 30px rgba(0,0,0,.6);text-wrap:balance}
+.gtitle span{color:var(--gold)}
+.gsub{margin:0;font-weight:700;font-size:1.15rem;color:var(--muted)}
+.note{font-size:.95rem;color:var(--muted);margin:0}
+.btn{border:0;border-radius:999px;padding:.55em 1.6em .45em;font:clamp(1.3rem,2.4vw,1.7rem)/1.1 var(--f-display);letter-spacing:.02em;transition:transform .12s, box-shadow .12s}
+.btn.gold{background:linear-gradient(180deg,#ffd76b,var(--gold));color:var(--ink);box-shadow:0 6px 0 var(--gold-d),0 12px 30px rgba(255,194,58,.35)}
+.btn.gold:hover{transform:translateY(-2px)}
+.btn.gold:active{transform:translateY(4px);box-shadow:0 2px 0 var(--gold-d)}
+.btn.ghost{background:rgba(255,255,255,.08);color:#fff;border:2px solid rgba(255,255,255,.3)}
+.btn.ghost:hover{border-color:var(--gold)}
+
+/* HUD */
+#hud{position:absolute;top:0;left:0;right:0;z-index:15;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;pointer-events:none;transition:opacity .6s}
+#hud>*{pointer-events:auto}
+.brand{display:flex;align-items:center;gap:10px;background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:6px 16px 6px 8px;font:1.05rem/1 var(--f-display);backdrop-filter:blur(8px)}
+.brand svg{width:34px;height:34px}
+.score{display:flex;align-items:center;gap:12px;background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:8px 18px;backdrop-filter:blur(8px)}
+.score .rnd{font:1.05rem/1 var(--f-display);color:var(--muted)}
+.score .rnd b{color:#fff}
+.gl{display:flex;gap:6px}
+.gl i{width:22px;height:22px;border-radius:50%;border:2px dashed rgba(255,255,255,.3);display:block;transition:all .4s}
+.gl i.on{border:0;background:radial-gradient(circle at 35% 30%,#fff 0 30%,#dde4ef 60%,#9aa7bd);box-shadow:0 0 12px rgba(255,194,58,.8);position:relative}
+.gl i.on::after{content:"";position:absolute;inset:6px;background:#1e293b;clip-path:polygon(50% 0,100% 38%,82% 100%,18% 100%,0 38%)}
+.mini{background:var(--glass);border:1px solid var(--line);color:#fff;border-radius:999px;padding:8px 16px;font-weight:800;font-size:.95rem;backdrop-filter:blur(8px)}
+.mini:hover{border-color:var(--gold)}
+@media (max-width:720px){.brand span{display:none}.brand{padding:6px}}
+
+/* reading card */
+#readCard{position:absolute;top:84px;left:50%;transform:translateX(-50%);z-index:14;background:#fff;color:var(--ink);border-radius:20px;padding:12px 26px 10px;font:800 clamp(1.4rem,2.8vw,2.1rem)/1.2 var(--f-body);box-shadow:0 14px 40px rgba(0,0,0,.45);max-width:calc(100% - 32px);text-align:center;text-wrap:balance}
+#readCard.pop{animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:translateX(-50%) scale(.6);opacity:0}}
+
+#goalTxt{position:absolute;left:50%;top:34%;z-index:26;transform:translate(-50%,-50%);font:clamp(5rem,16vw,12rem)/1 var(--f-display);color:var(--gold);text-shadow:0 8px 0 #9a5d00,0 18px 50px rgba(0,0,0,.6);pointer-events:none;letter-spacing:.02em;animation:goal 1.6s cubic-bezier(.2,1.3,.4,1) forwards}
+@keyframes goal{0%{transform:translate(-50%,-50%) scale(.2) rotate(-12deg);opacity:0}25%{transform:translate(-50%,-50%) scale(1.08) rotate(3deg);opacity:1}40%{transform:translate(-50%,-50%) scale(1) rotate(0)}85%{opacity:1}100%{transform:translate(-50%,-60%) scale(1.05);opacity:0}}
+#goalTxt small{display:block;text-align:center;font-size:.32em;color:#fff;text-shadow:0 4px 0 rgba(0,0,0,.35),0 8px 30px rgba(0,0,0,.6);margin-top:.15em}
+#letterPop{position:absolute;left:50%;top:42%;z-index:26;transform:translate(-50%,-50%);display:grid;justify-items:center;gap:8px;pointer-events:none;animation:lp 1.5s cubic-bezier(.2,1.3,.4,1) forwards}
+#letterPop span{font:800 1.4rem/1 var(--f-body);background:rgba(0,0,0,.5);padding:6px 16px;border-radius:999px}
+#letterPop b{display:grid;place-items:center;min-width:2.2ch;height:1.6em;padding:0 .3em;font:clamp(5rem,13vw,9rem)/1 var(--f-display);color:var(--ink);background:linear-gradient(180deg,#ffe08a,var(--gold));border-radius:28px;box-shadow:0 10px 0 var(--gold-d),0 0 60px rgba(255,194,58,.7)}
+@keyframes lp{0%{transform:translate(-50%,-50%) scale(.2);opacity:0}25%{transform:translate(-50%,-50%) scale(1.06);opacity:1}35%{transform:translate(-50%,-50%) scale(1)}80%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,40%) scale(.5);opacity:0}}
+
+/* answer panel */
+#panel{position:absolute;left:50%;bottom:0;z-index:16;width:min(1240px,calc(100% - 24px));max-height:60vh;overflow:auto;transform:translate(-50%,105%);transition:transform .6s cubic-bezier(.2,.9,.2,1);background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--line);border-bottom:0;border-radius:28px 28px 0 0;padding:16px 20px 18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px 24px;box-shadow:0 -20px 60px rgba(0,0,0,.4)}
+#panel.open{transform:translate(-50%,0)}
+.left{display:grid;gap:12px;min-width:0;align-content:start}
+.task{display:flex;align-items:center;gap:14px}
+.task p{margin:0;font:800 clamp(1.35rem,2.4vw,1.85rem)/1.2 var(--f-body)}
+.boxes{display:flex;flex-wrap:wrap;gap:7px}
+.bx{width:50px;height:58px;border-radius:14px;border:2px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);color:#fff;font:1.9rem/1 var(--f-display);text-align:center;padding:0;caret-color:var(--gold);transition:background .2s,border-color .2s,transform .2s}
+.bx:focus{outline:none;border-color:var(--gold);background:rgba(255,194,58,.14);box-shadow:0 0 0 4px rgba(255,194,58,.2);transform:translateY(-2px)}
+.bx.ok{border-color:var(--ok);background:rgba(47,209,139,.18)}
+.bx.bad{border-color:var(--warn);background:rgba(255,159,67,.2);animation:wob .4s}
+.bx.shown{border-color:var(--info);background:rgba(90,169,255,.25);color:#cfe5ff}
+.bx.tgt{display:grid;place-items:center;border:0;background:linear-gradient(180deg,#ffe08a,var(--gold));color:var(--ink);box-shadow:0 4px 0 var(--gold-d)}
+@keyframes wob{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.msg{margin:0;min-height:1.5em;font-weight:800;font-size:1.2rem}
+.msg.ok{color:var(--ok)}.msg.warn{color:#ffc58a}.msg.info{color:#b8d8ff}
+.actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.mic{display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.1);color:#fff;border:2px solid rgba(255,255,255,.3);box-shadow:none}
+.mic svg{width:26px;height:26px}
+.mic:hover{border-color:var(--gold)}
+.mic.on{background:var(--red);border-color:#ff8a8c;animation:micp 1.3s ease-in-out infinite}
+@keyframes micp{0%,100%{box-shadow:0 0 0 0 rgba(229,56,59,.6)}50%{box-shadow:0 0 0 12px rgba(229,56,59,0)}}
+.micSt{margin:0;font-weight:700;font-size:1.05rem;color:var(--muted);min-height:1.4em}
+.micSt b{color:#fff}
+.micSt.warn{color:#ffc58a}
+.kb{display:grid;gap:6px;align-content:start}
+.kb .r{display:flex;gap:6px;justify-content:center}
+.k{min-width:40px;height:44px;padding:0 6px;border-radius:10px;border:0;background:rgba(255,255,255,.1);color:#fff;font:1.3rem/1 var(--f-display);box-shadow:0 3px 0 rgba(0,0,0,.35)}
+.k:hover{background:rgba(255,255,255,.18)}
+.k:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.35)}
+.k.wide{padding:0 12px;font:800 1rem/1 var(--f-body)}
+.kbh{font-size:.85rem;color:var(--muted);text-align:center;margin:0}
+@media (max-width:1000px){#panel{grid-template-columns:minmax(0,1fr)}.bx{width:42px;height:50px;font-size:1.6rem}.k{min-width:32px;height:40px;font-size:1.1rem}}
+
+/* finale */
+#finale{position:absolute;inset:0;z-index:35;display:grid;place-items:center;padding-inline:16px;padding-block:20px;background:radial-gradient(ellipse at 50% 50%,rgba(6,15,38,.55),rgba(6,15,38,.9));overflow:auto}
+.env{display:grid;justify-items:center;gap:16px;text-align:center}
+.env h2{margin:0;font:clamp(2rem,5vw,3rem)/1 var(--f-display);color:var(--gold)}
+.env p{margin:0;font-weight:800;font-size:1.3rem}
+.envBtn{background:none;border:0;padding:0;animation:float 2.4s ease-in-out infinite}
+.envBtn svg{width:min(320px,70vw);height:auto;filter:drop-shadow(0 20px 40px rgba(0,0,0,.5))}
+@keyframes float{50%{transform:translateY(-10px) rotate(-1.5deg)}}
+.reward{width:min(760px,100%);background:linear-gradient(180deg,#fffaf0,#fff2cf);color:var(--ink);border-radius:28px;padding:22px clamp(16px,3vw,32px) 24px;display:grid;gap:16px;box-shadow:0 30px 80px rgba(0,0,0,.55);animation:rin .8s cubic-bezier(.2,1.2,.3,1)}
+@keyframes rin{from{transform:translateY(60px) scale(.9);opacity:0}}
+.rhead{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.rhead svg{width:110px;height:110px;flex:none}
+.rhead h2{margin:0;font:clamp(1.9rem,4.5vw,2.6rem)/1 var(--f-display);color:#9a5d00}
+.rhead p{margin:4px 0 0;font-weight:800;font-size:1.15rem;color:#5a4a2a}
+.chal{background:#0c1c40;color:#fff;border-radius:20px;padding:16px 20px;display:grid;gap:8px}
+.chal h3{margin:0;font:1.6rem/1.1 var(--f-display);color:var(--gold)}
+.chal ol{margin:0;padding-left:1.4em;display:grid;gap:6px;font-weight:700;font-size:1.15rem}
+.bonus{margin:0;font-weight:800;font-size:1.1rem}
+.ract{display:flex;gap:12px;flex-wrap:wrap}
+.reward .btn.ghost{color:var(--ink);background:transparent;border-color:rgba(11,22,48,.3)}
+.reward .btn.ghost:hover{border-color:var(--gold-d)}
+.champ{margin:0;font:1.6rem/1.15 var(--f-display);color:#1a7f50}
+
+#ballWrap{cursor:pointer}
+#aimRing{transform-box:fill-box;transform-origin:center;animation:spin 4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style>
+</head>
+<body>
+<div id="app">
+<svg id="world" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-label="Fotbalový stadion">
+  <defs>
+    <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#081233"/><stop offset=".6" stop-color="#1b2d66"/><stop offset="1" stop-color="#4a4a8a"/></linearGradient>
+    <linearGradient id="gRoof" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c2540"/><stop offset="1" stop-color="#0a1022"/></linearGradient>
+    <linearGradient id="gUpper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1634"/><stop offset="1" stop-color="#16295c"/></linearGradient>
+    <linearGradient id="gLower" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#12245a"/><stop offset="1" stop-color="#1d3576"/></linearGradient>
+    <linearGradient id="gBoard" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#101a33"/><stop offset="1" stop-color="#050a16"/></linearGradient>
+    <linearGradient id="gRay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff8dc" stop-opacity=".16"/><stop offset="1" stop-color="#fff8dc" stop-opacity="0"/></linearGradient>
+    <linearGradient id="gJersey" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b71f2a"/><stop offset=".45" stop-color="#ee3b44"/><stop offset="1" stop-color="#b71f2a"/></linearGradient>
+    <linearGradient id="gKeeper" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d98a06"/><stop offset=".5" stop-color="#ffc23a"/><stop offset="1" stop-color="#d98a06"/></linearGradient>
+    <linearGradient id="gPost" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#b9c3d6"/></linearGradient>
+    <radialGradient id="gBall" cx=".38" cy=".35" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".7" stop-color="#e4e9f2"/><stop offset="1" stop-color="#aab4c8"/></radialGradient>
+    <radialGradient id="gBallShade" cx=".35" cy=".3" r=".85"><stop offset=".55" stop-color="#000a28" stop-opacity="0"/><stop offset="1" stop-color="#000a28" stop-opacity=".45"/></radialGradient>
+    <radialGradient id="gLamp"><stop offset="0" stop-color="#fffbe8" stop-opacity=".95"/><stop offset=".35" stop-color="#fff2b8" stop-opacity=".45"/><stop offset="1" stop-color="#fff2b8" stop-opacity="0"/></radialGradient>
+    <radialGradient id="gPool" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fffbe0" stop-opacity=".14"/><stop offset="1" stop-color="#fffbe0" stop-opacity="0"/></radialGradient>
+    <clipPath id="cBall"><circle r="1"/></clipPath>
+    <clipPath id="cLed"><rect x="0" y="394" width="1600" height="32"/></clipPath>
+    <clipPath id="cMouth"><path id="fMouthClip"/></clipPath>
+  </defs>
+
+  <!-- sky + roof -->
+  <rect x="-400" y="-300" width="2400" height="420" fill="url(#gSky)"/>
+  <g id="stars" fill="#fff"></g>
+  <g id="masts"></g>
+  <path d="M-400,74 Q800,58 2000,74 L2000,112 L-400,112Z" fill="url(#gRoof)"/>
+  <path d="M-400,104 Q800,96 2000,104 L2000,114 L-400,114Z" fill="#05091a"/>
+  <g id="roofLights"></g>
+  <!-- stands -->
+  <rect x="-400" y="112" width="2400" height="126" fill="url(#gUpper)"/>
+  <rect x="-400" y="236" width="2400" height="27" fill="#070e24"/>
+  <text x="800" y="256" text-anchor="middle" font-family="Lilita One, sans-serif" font-size="17" fill="#ffc23a" letter-spacing="6">FRANTIHO FOTBALOVÁ AKADEMIE</text>
+  <g id="exits"></g>
+  <rect x="-400" y="263" width="2400" height="132" fill="url(#gLower)"/>
+  <image id="crowdA" x="0" y="110" width="1600" height="285" preserveAspectRatio="none"/>
+  <image id="crowdB" x="0" y="110" width="1600" height="285" preserveAspectRatio="none"/>
+  <g id="flashes" fill="#fff"></g>
+  <g id="rays" style="mix-blend-mode:screen"></g>
+  <!-- pitch -->
+  <image id="grass" x="-400" y="390" width="2400" height="560" preserveAspectRatio="none"/>
+  <!-- ad boards -->
+  <rect x="-400" y="392" width="2400" height="36" fill="url(#gBoard)"/>
+  <g clip-path="url(#cLed)"><g id="led"><text id="ledText" x="0" y="418" font-family="Lilita One, sans-serif" font-size="22" fill="#fff" letter-spacing="2"></text></g></g>
+  <rect x="-400" y="392" width="2400" height="2" fill="#2a3c6e"/>
+  <g id="lines" fill="#fff" opacity=".88"></g>
+  <ellipse cx="800" cy="640" rx="760" ry="230" fill="url(#gPool)"/>
+  <g id="goalShadow" fill="#04220a" opacity=".22"></g>
+  <ellipse id="ballShadow" fill="#03140a" opacity=".45"/>
+  <!-- goal: net, ball-in-goal slot, posts -->
+  <path id="netFill" fill="#fff" opacity=".06"/>
+  <path id="netSide" fill="none" stroke="#fff" stroke-opacity=".33" stroke-width=".9"/>
+  <path id="netBack" fill="none" stroke="#fff" stroke-opacity=".38" stroke-width=".9"/>
+  <g id="slotIn"></g>
+  <g id="posts"></g>
+
+  <!-- keeper -->
+  <g id="keeperWrap">
+    <ellipse cx="0" cy="0" rx="80" ry="13" fill="#000" opacity=".35"/>
+    <g id="keeperBody">
+      <path d="M-22,-122 L-52,-72" stroke="#111827" stroke-width="27" stroke-linecap="round"/>
+      <path d="M22,-122 L52,-72" stroke="#111827" stroke-width="27" stroke-linecap="round"/>
+      <path d="M-52,-72 L-44,-18" stroke="#ffc23a" stroke-width="21" stroke-linecap="round"/>
+      <path d="M52,-72 L44,-18" stroke="#ffc23a" stroke-width="21" stroke-linecap="round"/>
+      <path d="M-52,-58 L-50,-46" stroke="#111827" stroke-width="22"/>
+      <path d="M52,-58 L50,-46" stroke="#111827" stroke-width="22"/>
+      <ellipse cx="-50" cy="-8" rx="22" ry="10" fill="#0f172a"/><ellipse cx="50" cy="-8" rx="22" ry="10" fill="#0f172a"/>
+      <path d="M-66,-8 h30" stroke="#ff4fa3" stroke-width="3" stroke-linecap="round"/><path d="M36,-8 h30" stroke="#ff4fa3" stroke-width="3" stroke-linecap="round"/>
+      <path d="M-44,-160 H44 L50,-112 L14,-106 L0,-122 L-14,-106 L-50,-112Z" fill="#111827"/>
+      <path d="M-49,-238 Q0,-252 49,-238 L47,-150 Q0,-142 -47,-150Z" fill="url(#gKeeper)"/>
+      <path d="M-48,-206 L48,-226 L48,-212 L-47,-190Z M-47,-176 L47,-196 L47,-182 L-47,-162Z" fill="#111827" opacity=".85"/>
+      <text x="0" y="-158" text-anchor="middle" font-family="Lilita One, sans-serif" font-size="30" fill="#fff" stroke="#111827" stroke-width="5" paint-order="stroke">1</text>
+      <g id="kArmL">
+        <path d="M-44,-228 L-90,-196" stroke="#111827" stroke-width="21" stroke-linecap="round"/>
+        <path d="M-90,-196 L-110,-158" stroke="#111827" stroke-width="17" stroke-linecap="round"/>
+        <rect x="-132" y="-170" width="42" height="46" rx="15" fill="#f8fafc" stroke="#a3e635" stroke-width="5"/>
+        <ellipse cx="-90" cy="-160" rx="7" ry="11" fill="#f8fafc" stroke="#a3e635" stroke-width="4"/>
+      </g>
+      <g id="kArmR">
+        <path d="M44,-228 L90,-196" stroke="#111827" stroke-width="21" stroke-linecap="round"/>
+        <path d="M90,-196 L110,-158" stroke="#111827" stroke-width="17" stroke-linecap="round"/>
+        <rect x="90" y="-170" width="42" height="46" rx="15" fill="#f8fafc" stroke="#a3e635" stroke-width="5"/>
+        <ellipse cx="90" cy="-160" rx="7" ry="11" fill="#f8fafc" stroke="#a3e635" stroke-width="4"/>
+      </g>
+      <rect x="-12" y="-254" width="24" height="22" rx="7" fill="#c98a62"/>
+      <circle cx="-44" cy="-276" r="10" fill="#d99b72"/><circle cx="44" cy="-276" r="10" fill="#d99b72"/>
+      <circle cx="0" cy="-278" r="45" fill="#e2a77e"/>
+      <path d="M-46,-286 Q-46,-330 0,-328 Q46,-330 46,-286 Q38,-300 22,-304 Q0,-294 -24,-304 Q-38,-300 -46,-286Z" fill="#20140b"/>
+      <path d="M-46,-292 Q0,-306 46,-292 L46,-282 Q0,-296 -46,-282Z" fill="#ffc23a"/>
+      <path d="M-30,-276 L-8,-270 M30,-276 L8,-270" stroke="#20140b" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="-17" cy="-262" rx="8" ry="7" fill="#fff"/><ellipse cx="17" cy="-262" rx="8" ry="7" fill="#fff"/>
+      <circle cx="-16" cy="-261" r="4.2" fill="#1b130d"/><circle cx="16" cy="-261" r="4.2" fill="#1b130d"/>
+      <path d="M-22,-246 Q0,-224 22,-246 Q0,-238 -22,-246Z" fill="#7c1f33"/>
+      <path d="M-18,-245 Q0,-240 18,-245 L17,-241 Q0,-236 -17,-241Z" fill="#fff"/>
+    </g>
+  </g>
+
+  <g id="slotFront">
+    <g id="ballWrap">
+      <circle r="2.4" fill="transparent" id="ballHit"/>
+      <circle id="aimRing" r="1.75" fill="none" stroke="#ffc23a" stroke-width=".16" stroke-dasharray=".5 .3"/>
+      <circle r="1" fill="url(#gBall)"/>
+      <g clip-path="url(#cBall)"><g id="ballPat"></g></g>
+      <circle r="1" fill="url(#gBallShade)"/>
+      <ellipse cx="-.36" cy="-.42" rx=".26" ry=".15" fill="#fff" opacity=".7"/>
+    </g>
+  </g>
+
+  <!-- boy, front pose (intro, finale) -->
+  <g id="boyFWrap">
+    <ellipse cx="0" cy="0" rx="62" ry="11" fill="#000" opacity=".38"/>
+    <g id="boyFIn">
+      <rect x="-30" y="-100" width="21" height="48" rx="9" fill="#efbf98"/>
+      <rect x="9" y="-100" width="21" height="48" rx="9" fill="#efbf98"/>
+      <rect x="-32" y="-64" width="25" height="54" rx="9" fill="#1d3fb0"/>
+      <rect x="7" y="-64" width="25" height="54" rx="9" fill="#1d3fb0"/>
+      <rect x="-32" y="-57" width="25" height="6" fill="#fff"/><rect x="7" y="-57" width="25" height="6" fill="#fff"/>
+      <path d="M-6,-15 h-28 q-13,0 -13,9 q0,6 8,6 h31 q4,0 4,-6z" fill="#0f172a"/>
+      <path d="M6,-15 h28 q13,0 13,9 q0,6 -8,6 h-31 q-4,0 -4,-6z" fill="#0f172a"/>
+      <path d="M-40,-7 h28 M12,-7 h28" stroke="#b6f03c" stroke-width="3" stroke-linecap="round"/>
+      <path d="M-48,-134 H48 L53,-90 Q30,-84 7,-90 L0,-104 L-7,-90 Q-30,-84 -53,-90Z" fill="#f3f6fc"/>
+      <path d="M-48,-134 H48 L49,-124 H-49Z" fill="#d5dcea"/>
+      <path d="M-50,-114 L-53,-90 M50,-114 L53,-90" stroke="#e5383b" stroke-width="5"/>
+      <path d="M-46,-216 Q-23,-226 0,-224 Q23,-226 46,-216 L52,-134 Q0,-125 -52,-134Z" fill="url(#gJersey)"/>
+      <path d="M-52,-134 Q0,-125 52,-134 L51,-143 Q0,-134 -51,-143Z" fill="#a51c26"/>
+      <path d="M-17,-223 L0,-203 L17,-223" fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M-36,-196 l9,-3 l9,3 v8 q0,8 -9,12 q-9,-4 -9,-12z" fill="#fff"/><circle cx="-27" cy="-187" r="4" fill="#1d3fb0"/>
+      <text x="25" y="-168" text-anchor="middle" font-family="Lilita One, sans-serif" font-size="28" fill="#fff">7</text>
+      <g id="fArmL">
+        <path d="M-44,-214 Q-64,-210 -70,-184 L-52,-176 Q-48,-196 -40,-200Z" fill="#cf2b33"/>
+        <path d="M-62,-180 Q-70,-152 -64,-131" stroke="#efbf98" stroke-width="15" stroke-linecap="round" fill="none"/>
+        <circle cx="-63" cy="-126" r="10" fill="#f3c6a1"/>
+      </g>
+      <g id="fArmR">
+        <path d="M44,-214 Q64,-210 70,-184 L52,-176 Q48,-196 40,-200Z" fill="#cf2b33"/>
+        <path d="M62,-180 Q70,-152 64,-131" stroke="#efbf98" stroke-width="15" stroke-linecap="round" fill="none"/>
+        <circle cx="63" cy="-126" r="10" fill="#f3c6a1"/>
+      </g>
+      <rect x="-11" y="-242" width="22" height="26" rx="7" fill="#dfa27b"/>
+      <g id="fHead">
+        <circle cx="-49" cy="-272" r="11" fill="#efbf98"/><circle cx="49" cy="-272" r="11" fill="#efbf98"/>
+        <circle cx="-50" cy="-272" r="5" fill="#dfa27b"/><circle cx="50" cy="-272" r="5" fill="#dfa27b"/>
+        <ellipse cx="0" cy="-275" rx="50" ry="52" fill="#f6cba6"/>
+        <path d="M-49,-262 Q-44,-230 0,-223 Q44,-230 49,-262 Q42,-238 0,-232 Q-42,-238 -49,-262Z" fill="#e3a982" opacity=".55"/>
+        <path d="M-53,-270 C-60,-318 -28,-342 4,-338 C38,-336 62,-312 53,-270 C50,-286 44,-296 36,-300 C33,-289 24,-286 18,-297 C12,-286 0,-284 -4,-297 C-12,-286 -24,-286 -28,-299 C-38,-292 -47,-286 -53,-270Z" fill="#6b4423"/>
+        <path d="M-30,-322 Q-6,-334 22,-326 M-40,-306 Q-30,-316 -18,-318" stroke="#93613a" stroke-width="5" stroke-linecap="round" fill="none"/>
+        <path d="M-30,-292 Q-19,-299 -8,-292 M8,-292 Q19,-299 30,-292" stroke="#4a2e17" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+        <g id="fEyes">
+          <ellipse cx="-19" cy="-274" rx="10" ry="12" fill="#fff"/><ellipse cx="19" cy="-274" rx="10" ry="12" fill="#fff"/>
+          <circle cx="-18" cy="-273" r="7" fill="#6a4320"/><circle cx="18" cy="-273" r="7" fill="#6a4320"/>
+          <circle cx="-18" cy="-273" r="3.6" fill="#120c08"/><circle cx="18" cy="-273" r="3.6" fill="#120c08"/>
+          <circle cx="-15.5" cy="-276.5" r="2.3" fill="#fff"/><circle cx="20.5" cy="-276.5" r="2.3" fill="#fff"/>
+        </g>
+        <path d="M-3,-259 Q0,-253 4,-259" stroke="#d1916a" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="-31" cy="-253" r="8" fill="#f2897a" opacity=".4"/><circle cx="31" cy="-253" r="8" fill="#f2897a" opacity=".4"/>
+        <g fill="#c98a62" opacity=".7"><circle cx="-27" cy="-259" r="1.4"/><circle cx="-33" cy="-261" r="1.2"/><circle cx="27" cy="-259" r="1.4"/><circle cx="33" cy="-261" r="1.2"/></g>
+        <path id="fMouth" fill="#7c1f33"/>
+        <g clip-path="url(#cMouth)"><ellipse id="fTongue" cx="0" cy="-232" rx="8" ry="5" fill="#ea6a7e"/><path id="fTeeth" fill="#fff"/></g>
+      </g>
+    </g>
+  </g>
+
+  <!-- boy, back pose (gameplay) -->
+  <g id="boyBWrap">
+    <ellipse cx="0" cy="0" rx="62" ry="11" fill="#000" opacity=".38"/>
+    <g id="boyBIn">
+      <rect x="-30" y="-100" width="21" height="48" rx="9" fill="#e9b48d"/>
+      <rect x="-32" y="-64" width="25" height="54" rx="9" fill="#1d3fb0"/>
+      <rect x="-32" y="-57" width="25" height="6" fill="#fff"/>
+      <path d="M-34,-15 h26 q4,0 4,6 v4 q0,5 -6,5 h-22 q-6,0 -6,-6z" fill="#0f172a"/>
+      <g id="pLegR">
+        <rect x="9" y="-100" width="21" height="48" rx="9" fill="#e9b48d"/>
+        <rect x="7" y="-64" width="25" height="54" rx="9" fill="#1d3fb0"/>
+        <rect x="7" y="-57" width="25" height="6" fill="#fff"/>
+        <path d="M8,-15 h26 q4,0 4,6 v4 q0,5 -6,5 h-22 q-6,0 -6,-6z" fill="#0f172a"/>
+      </g>
+      <path d="M-48,-134 H48 L53,-90 Q30,-84 7,-90 L0,-104 L-7,-90 Q-30,-84 -53,-90Z" fill="#e8edf6"/>
+      <path d="M-48,-134 H48 L49,-124 H-49Z" fill="#cdd5e4"/>
+      <path d="M-46,-216 Q-23,-224 0,-222 Q23,-224 46,-216 L52,-134 Q0,-125 -52,-134Z" fill="url(#gJersey)"/>
+      <path d="M-16,-222 Q0,-215 16,-222" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+      <text x="0" y="-195" text-anchor="middle" font-family="Lilita One, sans-serif" font-size="16" letter-spacing="1.5" fill="#fff">FRANTA</text>
+      <text x="0" y="-142" text-anchor="middle" font-family="Lilita One, sans-serif" font-size="54" fill="#fff" stroke="#8f1620" stroke-width="5" paint-order="stroke">7</text>
+      <g id="pArmL">
+        <path d="M-44,-214 Q-64,-210 -70,-184 L-52,-176 Q-48,-196 -40,-200Z" fill="#cf2b33"/>
+        <path d="M-62,-180 Q-70,-152 -64,-131" stroke="#e9b48d" stroke-width="15" stroke-linecap="round" fill="none"/>
+        <circle cx="-63" cy="-126" r="10" fill="#efbf98"/>
+      </g>
+      <g id="pArmR">
+        <path d="M44,-214 Q64,-210 70,-184 L52,-176 Q48,-196 40,-200Z" fill="#cf2b33"/>
+        <path d="M62,-180 Q70,-152 64,-131" stroke="#e9b48d" stroke-width="15" stroke-linecap="round" fill="none"/>
+        <circle cx="63" cy="-126" r="10" fill="#efbf98"/>
+      </g>
+      <rect x="-12" y="-242" width="24" height="26" rx="7" fill="#dfa27b"/>
+      <circle cx="-49" cy="-270" r="11" fill="#efbf98"/><circle cx="49" cy="-270" r="11" fill="#efbf98"/>
+      <ellipse cx="0" cy="-278" rx="50" ry="54" fill="#6b4423"/>
+      <path d="M-44,-252 Q0,-236 44,-252 Q40,-238 0,-232 Q-40,-238 -44,-252Z" fill="#5a381c"/>
+      <path d="M-8,-300 q10,-10 18,0 q-8,6 -16,2" stroke="#93613a" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M-34,-312 Q-10,-330 24,-320" stroke="#93613a" stroke-width="5" fill="none" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <g id="floatL" font-family="Lilita One, sans-serif" font-size="26" text-anchor="middle" fill="#ffc23a" opacity="0"></g>
+</svg>
+<canvas id="fx"></canvas>
+<div id="vig"></div>
+<div class="bar top"></div><div class="bar bot"></div>
+
+<div id="lower3" hidden><span class="live"><i></i>ŽIVĚ</span><span class="tx"><b>Frantiho fotbalová akademie</b><small>Stadion Abeceda · výkop 18:00</small></span></div>
+<div id="subs" hidden aria-live="polite"></div>
+<button id="skip" hidden>Přeskočit úvod</button>
+
+<header id="hud" hidden>
+  <div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2 L35 8 V20 C35 29 28 35 20 38 C12 35 5 29 5 20 V8Z" fill="#ffc23a"/><path d="M20 6 L31 10.5 V20 C31 27 26 31.5 20 34 C14 31.5 9 27 9 20 V10.5Z" fill="#0c1c40"/><circle cx="20" cy="20" r="7.5" fill="#fff"/><path d="M20 15.5 l4.3 3.1 -1.6 5 h-5.4 l-1.6 -5z" fill="#0c1c40"/></svg><span>Frantiho fotbalová akademie</span></div>
+  <div class="score"><span class="rnd">Kolo <b id="rnd">1</b> z 5</span><span class="gl" id="goals"><i></i><i></i><i></i><i></i><i></i></span></div>
+  <button class="mini" id="snd">Zvuk: zapnutý</button>
+</header>
+
+<div id="readCard" hidden></div>
+<div id="goalTxt" hidden>GÓL!<small id="goalKind"></small></div>
+<div id="letterPop" hidden><span>Tvoje písmeno</span><b id="lpL">M</b></div>
+
+<section id="panel" aria-label="Odpověď">
+  <div class="left">
+    <div class="task"><p id="taskText"></p></div>
+    <div class="boxes" id="boxes"></div>
+    <p class="msg" id="msg" aria-live="polite"></p>
+    <div class="actions"><button class="btn mic" id="mic" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5" fill="currentColor"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5M8.5 21.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span id="micTx">Diktovat</span></button><button class="btn gold" id="done">Hotovo</button><button class="btn gold" id="next" hidden>Hrajeme dál!</button></div>
+    <p class="micSt" id="micSt">Klikni na Diktovat a říkej písmena nahlas: á, bé, cé…</p>
+  </div>
+  <div class="kb" id="kb" aria-label="Písmena na obrazovce"></div>
+</section>
+
+<div id="gate">
+  <div class="gcard">
+    <svg class="crest" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2 L35 8 V20 C35 29 28 35 20 38 C12 35 5 29 5 20 V8Z" fill="#ffc23a"/><path d="M20 6 L31 10.5 V20 C31 27 26 31.5 20 34 C14 31.5 9 27 9 20 V10.5Z" fill="#0c1c40"/><circle cx="20" cy="20" r="7.5" fill="#fff"/><path d="M20 15.5 l4.3 3.1 -1.6 5 h-5.4 l-1.6 -5z" fill="#0c1c40"/></svg>
+    <h1 class="gtitle">Frantiho <span>fotbalová</span> akademie</h1>
+    <p class="gsub">Pět střel na bránu. Za každý gól jedno písmeno abecedy.</p>
+    <button class="btn gold" id="startBtn">START</button>
+    <p class="note" id="voiceNote">Zapni si zvuk.</p>
+  </div>
+</div>
+
+<div id="finale" hidden></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const NS='http://www.w3.org/2000/svg';
+const $=s=>document.querySelector(s);
+const svg=$('#world');
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* ---------- projection: camera 9 m behind the penalty spot ---------- */
+const F=983.6,CAMH=4.68,ZC=20,HOR=250,CX=800;
+const proj=(X,d,h=0)=>{const Z=ZC-d;return [CX+F*X/Z,HOR+F*(CAMH-h)/Z,Z];};
+const lerp=(a,b,t)=>a+(b-a)*t;
+const E={lin:t=>t,io:t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,out:t=>1-Math.pow(1-t,3),ios:t=>-(Math.cos(Math.PI*t)-1)/2,back:t=>{const c=1.70158;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2);},inq:t=>t*t,outq:t=>1-(1-t)*(1-t)};
+const rng=seed=>()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const mk=(tag,at,p)=>{const e=document.createElementNS(NS,tag);for(const k in at)e.setAttribute(k,at[k]);if(p)p.appendChild(e);return e;};
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ---------- tweens ---------- */
+let tweens=[];
+function tween(dur,fn,ease=E.io,tag=''){return new Promise(res=>{tweens.push({t0:performance.now(),dur:Math.max(1,dur),fn,ease,res,tag});});}
+function killTweens(tag){tweens=tweens.filter(t=>{if(t.tag===tag){t.res();return false;}return true;});}
+function runTweens(now){const list=tweens;tweens=[];for(const t of list){const p=Math.min(1,Math.max(0,(now-t.t0)/t.dur));t.fn(t.ease(p));if(p>=1)t.res();else tweens.push(t);}}
+
+/* ---------- camera ---------- */
+const cam={x:120,y:60,w:1360};let shake=0;
+const frame=(cx,cy,w)=>({x:cx-w/2,y:cy-w*.5625/2,w});
+function camTo(v,dur,ease=E.io,tag='cam'){const s={...cam};return tween(dur,p=>{cam.x=lerp(s.x,v.x,p);cam.y=lerp(s.y,v.y,p);cam.w=lerp(s.w,v.w,p);},ease,tag);}
+function applyCam(now){const t=now/1000,a=RM?0:shake*cam.w*.0045;const ox=(Math.sin(t*.9)+.5*Math.sin(t*2.3+1))*a,oy=(Math.sin(t*1.13+2)+.5*Math.sin(t*2.9))*a*.7;svg.setAttribute('viewBox',`${(cam.x+ox).toFixed(2)} ${(cam.y+oy).toFixed(2)} ${cam.w.toFixed(2)} ${(cam.w*.5625).toFixed(2)}`);}
+
+/* ---------- actors ---------- */
+const BALL_R=.198,SPOT={X:0,d:11};
+const START_B={X:-.6,d:12.2},INTRO_F={X:-.75,d:11.3};
+const A={
+  ball:{X:0,d:11,h:0,rot:0,vis:1,sc:1},
+  keeper:{X:0,d:.6,h:0,rot:0,arms:0,clap:0,idle:1},
+  boyF:{X:INTRO_F.X,d:INTRO_F.d,vis:1,flip:1,wave:0,jump:0,talk:0},
+  boyB:{X:START_B.X,d:START_B.d,vis:0,flip:1,leg:0,arms:0,jump:0,lean:0}
+};
+const boyScale=Z=>(F/Z)*1.875/300;
+function faceFrame(X,d,w=240){const[x,y,Z]=proj(X,d);return frame(x,y-268*boyScale(Z),w);}
+function boyMedFrame(X,d,w=540){const[x,y,Z]=proj(X,d);return frame(x+40,y-120*boyScale(Z),w);}
+const ballWrap=$('#ballWrap'),ballPat=$('#ballPat'),ballShadow=$('#ballShadow');
+const keeperWrap=$('#keeperWrap'),keeperBody=$('#keeperBody'),kArmL=$('#kArmL'),kArmR=$('#kArmR');
+const boyFWrap=$('#boyFWrap'),boyFIn=$('#boyFIn'),fArmR=$('#fArmR'),fArmL=$('#fArmL'),fHead=$('#fHead'),fEyes=$('#fEyes');
+const boyBWrap=$('#boyBWrap'),boyBIn=$('#boyBIn'),pLegR=$('#pLegR'),pArmL=$('#pArmL'),pArmR=$('#pArmR');
+const fMouth=$('#fMouth'),fMouthClip=$('#fMouthClip'),fTeeth=$('#fTeeth'),fTongue=$('#fTongue');
+let mouth=0,mouthT=0,talking=false,nextFlap=0,blinkAt=2500,blinkStart=-1e9;
+
+function renderActors(now){
+  const b=A.ball,[bx,by,bz]=proj(b.X,b.d,b.h+BALL_R),r=F*BALL_R/bz*b.sc;
+  ballWrap.setAttribute('transform',`translate(${bx.toFixed(2)},${by.toFixed(2)}) scale(${r.toFixed(3)})`);
+  ballWrap.style.opacity=b.vis;ballPat.setAttribute('transform',`rotate(${(b.rot%360).toFixed(1)})`);
+  const[sx,sy]=proj(b.X,b.d,0),hf=Math.max(.25,1-b.h*.35);
+  ballShadow.setAttribute('cx',sx);ballShadow.setAttribute('cy',sy);ballShadow.setAttribute('rx',r*1.05*hf);ballShadow.setAttribute('ry',r*.3*hf);ballShadow.style.opacity=.45*hf*b.vis;
+  const k=A.keeper;let kx=k.X,kh=k.h;if(k.idle){kx+=Math.sin(now/650)*.32*k.idle;kh+=Math.max(0,Math.sin(now/325))*.04*k.idle;}
+  const[kxp,kyp,kz]=proj(kx,k.d,0),ks=(F/kz)*2.0/300;
+  keeperWrap.setAttribute('transform',`translate(${kxp.toFixed(2)},${kyp.toFixed(2)}) scale(${ks.toFixed(4)})`);
+  keeperBody.setAttribute('transform',`translate(0,${(-kh*150).toFixed(1)}) rotate(${k.rot.toFixed(1)} 0 -150)`);
+  const clap=Math.sin(k.clap*Math.PI*4)*Math.min(1,k.clap*8)*(1-k.clap);
+  kArmL.setAttribute('transform',`rotate(${(k.arms*115-clap*45).toFixed(1)} -44 -228)`);
+  kArmR.setAttribute('transform',`rotate(${(-k.arms*115+clap*45).toFixed(1)} 44 -228)`);
+  // front boy
+  const f=A.boyF;boyFWrap.style.display=f.vis?'':'none';
+  if(f.vis){const[fx,fy,fz]=proj(f.X,f.d),s=boyScale(fz),sway=Math.sin(now/950)*1.6;
+    boyFWrap.setAttribute('transform',`translate(${(fx+sway*s).toFixed(2)},${fy.toFixed(2)}) scale(${(s*f.flip).toFixed(4)},${s.toFixed(4)})`);
+    const br=1+Math.sin(now/700)*.008;boyFIn.setAttribute('transform',`translate(0,${-f.jump}) scale(1,${br})`);
+    const w=f.wave?(-150+Math.sin(now/110)*16)*f.wave:0;fArmR.setAttribute('transform',`rotate(${w.toFixed(1)} 46 -210)`);
+    fArmL.setAttribute('transform',`rotate(${(f.cheer||0)*150} -46 -210)`);
+    const tilt=Math.sin(now/230)*2.4*f.talk+Math.sin(now/1300)*1.2;fHead.setAttribute('transform',`rotate(${tilt.toFixed(2)} 0 -236)`);
+    if(now>blinkAt){blinkStart=now;blinkAt=now+2800+Math.random()*3200;}
+    const bt=(now-blinkStart)/150;const bl=bt<1?1-Math.sin(bt*Math.PI)*.9:1;
+    fEyes.setAttribute('transform',`translate(0,-274) scale(1,${bl.toFixed(2)}) translate(0,274)`);}
+  // back boy
+  const p=A.boyB;boyBWrap.style.display=p.vis?'':'none';
+  if(p.vis){const[px,py,pz]=proj(p.X,p.d),s=boyScale(pz);
+    boyBWrap.setAttribute('transform',`translate(${px.toFixed(2)},${py.toFixed(2)}) scale(${(s*p.flip).toFixed(4)},${s.toFixed(4)})`);
+    boyBIn.setAttribute('transform',`translate(0,${-p.jump}) rotate(${p.lean} 0 0)`);
+    pLegR.setAttribute('transform',`translate(0,${-p.leg*26}) rotate(${-p.leg*32} 20 -100)`);
+    pArmL.setAttribute('transform',`rotate(${p.arms*150} -46 -210)`);pArmR.setAttribute('transform',`rotate(${-p.arms*150} 46 -210)`);}
+}
+function renderMouth(now){
+  if(talking&&now>nextFlap){mouthT=Math.random()<.18?0:.25+Math.random()*.75;nextFlap=now+70+Math.random()*70;}
+  if(!talking)mouthT=0;
+  mouth+= (mouthT-mouth)*.45;const t=mouth,w=15-3*t;
+  const d=`M${-w},-244 Q0,-239 ${w},-244 Q0,${(-236+19*t).toFixed(1)} ${-w},-244Z`;
+  fMouth.setAttribute('d',d);fMouthClip.setAttribute('d',d);
+  fTeeth.setAttribute('d',`M${-w},-246 Q0,-239 ${w},-246 L${w},-243 Q0,${(-237+3*t).toFixed(1)} ${-w},-243Z`);
+  fTongue.setAttribute('cy',(-237+15*t).toFixed(1));fTongue.setAttribute('rx',(w*.6).toFixed(1));
+  A.boyF.talk+=((talking?1:0)-A.boyF.talk)*.1;
+}
+
+/* ---------- build stadium ---------- */
+function buildStadium(){
+  const R=rng(7);
+  const st=$('#stars');for(let i=0;i<70;i++)mk('circle',{cx:-400+R()*2400,cy:-280+R()*340,r:.6+R()*1.2,opacity:.3+R()*.6},st);
+  // masts + floodlight banks
+  const masts=$('#masts'),rl=$('#roofLights'),rays=$('#rays');
+  [[220,-36],[1380,-36],[-260,-20],[1860,-20]].forEach(([x,y])=>{
+    mk('rect',{x:x-4,y:y+40,width:8,height:60,fill:'#0b1124'},masts);
+    mk('rect',{x:x-78,y:y-6,width:156,height:50,rx:6,fill:'#0b1124'},masts);
+    mk('circle',{cx:x,cy:y+18,r:170,fill:'url(#gLamp)'},rl);
+    for(let r=0;r<3;r++)for(let c=0;c<8;c++)mk('rect',{x:x-70+c*18,y:y+r*15,width:14,height:11,rx:2,fill:'#fffbe6'},rl);
+    if(x>0&&x<1600)mk('path',{d:`M${x-60},${y+40} L${x+60},${y+40} L${800+(x-800)*.2+260},900 L${800+(x-800)*.2-260},900Z`,fill:'url(#gRay)'},rays);
+  });
+  const ex=$('#exits');for(let x=60;x<1600;x+=220)mk('rect',{x,y:240,width:26,height:20,rx:3,fill:'#2a7d4f',opacity:.8},ex);
+  // crowd (two layers so they can bounce in turns)
+  const W=1600,H=285,S=2,cv=[0,1].map(()=>{const c=document.createElement('canvas');c.width=W*S;c.height=H*S;const x=c.getContext('2d');x.scale(S,S);return x;});
+  const shirts=['#e5383b','#e5383b','#e5383b','#f8fafc','#f8fafc','#1d4ed8','#1d4ed8','#facc15','#22c55e','#64748b','#0f172a','#f472b6','#fb923c'];
+  const skins=['#f3c9a5','#e8b48a','#c98d62','#8d5a3b','#f7d7bd'],hairs=['#2b1a10','#5a3a1e','#1a1a1a','#a87842','#d9b26b','#6b6b6b'];
+  const tiers=[[124,228,3.3,4.4],[272,388,4.6,6.4]];
+  for(const[y0,y1,r0,r1]of tiers){for(let y=y0;y<=y1;){const t=(y-y0)/(y1-y0),r=lerp(r0,r1,t);
+      for(let x=-4+R()*6;x<W+6;x+=r*2.35+R()*r*.5){const L=cv[R()<.5?0:1],yy=y-110+(R()-.5)*r*.6,sh=pick2(shirts,R),sk=pick2(skins,R);
+        L.fillStyle=sh;L.beginPath();L.roundRect(x-r*1.25,yy+r*.75,r*2.5,r*2.6,r*.8);L.fill();
+        if(R()<.12){L.strokeStyle=sh;L.lineWidth=r*.55;L.lineCap='round';L.beginPath();L.moveTo(x-r,yy+r);L.lineTo(x-r*1.5,yy-r*1.6);L.moveTo(x+r,yy+r);L.lineTo(x+r*1.5,yy-r*1.6);L.stroke();L.fillStyle=sk;L.beginPath();L.arc(x-r*1.5,yy-r*1.8,r*.4,0,7);L.arc(x+r*1.5,yy-r*1.8,r*.4,0,7);L.fill();}
+        L.fillStyle=sk;L.beginPath();L.arc(x,yy,r,0,7);L.fill();
+        L.fillStyle=pick2(hairs,R);L.beginPath();L.arc(x,yy-r*.15,r*1.02,Math.PI*1.05,Math.PI*1.95);L.fill();
+        if(R()<.07){L.fillStyle='#e5383b';L.fillRect(x-r*2.4,yy-r*2.4,r*4.8,r*.9);L.fillStyle='#fff';L.fillRect(x-r*.8,yy-r*2.4,r*1.6,r*.9);}
+      }y+=r*2.45;}}
+  cv.forEach((L,i)=>{L.globalCompositeOperation='source-atop';const g=L.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba(5,10,35,.55)');g.addColorStop(.45,'rgba(5,10,35,.25)');g.addColorStop(1,'rgba(5,10,35,0)');L.fillStyle=g;L.fillRect(0,0,W,H);
+    $(i?'#crowdB':'#crowdA').setAttribute('href',L.canvas.toDataURL('image/png'));});
+  const fl=$('#flashes');for(let i=0;i<46;i++)mk('circle',{cx:R()*1600,cy:R()<.5?130+R()*95:280+R()*105,r:2+R()*2.5,opacity:0},fl);
+  // grass
+  const gw=2400,gh=560,GS=1.25,gc=document.createElement('canvas');gc.width=gw*GS;gc.height=gh*GS;const g=gc.getContext('2d');g.scale(GS,GS);
+  const yOf=d=>HOR+F*CAMH/(ZC-d)-390;
+  let k=0;for(let d=-14;d<19.6;d+=2.5,k++){const y1=yOf(d),y2=Math.min(gh,yOf(Math.min(d+2.5,19.6)));const near=Math.min(1,Math.max(0,(y1)/gh));
+    g.fillStyle=k%2?`hsl(112,${46+near*8}%,${24+near*9}%)`:`hsl(110,${48+near*8}%,${28+near*10}%)`;g.fillRect(0,y1,gw,y2-y1+1);}
+  for(let i=0;i<26000;i++){const y=Math.pow(R(),.8)*gh,x=R()*gw,len=1+y/gh*5;g.strokeStyle=R()<.5?'rgba(10,40,10,.22)':'rgba(170,230,120,.12)';g.lineWidth=.6+y/gh;g.beginPath();g.moveTo(x,y);g.lineTo(x+(R()-.5)*1.5,y-len);g.stroke();}
+  const vg=g.createLinearGradient(0,0,0,gh);vg.addColorStop(0,'rgba(0,15,10,.45)');vg.addColorStop(.25,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,10,0,.25)');g.fillStyle=vg;g.fillRect(0,0,gw,gh);
+  $('#grass').setAttribute('href',gc.toDataURL('image/jpeg',.86));
+  // field lines (perspective-correct quads)
+  const lines=$('#lines');
+  const quad=(X1,d1,X2,d2,w=.12)=>{const dx=X2-X1,dd=d2-d1,L=Math.hypot(dx,dd),nx=-dd/L*w/2,nd=dx/L*w/2;
+    const p=[[X1+nx,d1+nd],[X2+nx,d2+nd],[X2-nx,d2-nd],[X1-nx,d1-nd]].map(([X,d])=>proj(X,Math.min(d,16.9)));mk('path',{d:'M'+p.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' L')+'Z'},lines);};
+  quad(-40,0,40,0);quad(-9.16,0,-9.16,5.5);quad(9.16,0,9.16,5.5);quad(-9.16,5.5,9.16,5.5);quad(-20.16,0,-20.16,16.5);quad(20.16,0,20.16,16.5);
+  const[sx,sy,sz]=proj(0,11);mk('ellipse',{cx:sx,cy:sy,rx:F*.14/sz,ry:F*.05/sz},lines);
+  // goal shadow + posts
+  const gs=$('#goalShadow'),P=(X,d,h)=>proj(X,d,h).slice(0,2).map(v=>v.toFixed(1)).join(',');
+  mk('path',{d:`M${P(-3.66,0,0)} L${P(3.66,0,0)} L${P(3.66,-2,0)} L${P(-3.66,-2,0)}Z`},gs);
+  const posts=$('#posts');
+  const[lx]=proj(-3.72,0),[lx2]=proj(-3.6,0),[rx]=proj(3.6,0),[rx2]=proj(3.72,0),[,gy]=proj(0,0,0),[,ty]=proj(0,0,2.5),[,ty2]=proj(0,0,2.38);
+  mk('rect',{x:lx,y:ty,width:lx2-lx,height:gy-ty,fill:'url(#gPost)'},posts);mk('rect',{x:rx,y:ty,width:rx2-rx,height:gy-ty,fill:'url(#gPost)'},posts);
+  mk('rect',{x:lx,y:ty,width:rx2-lx,height:ty2-ty,fill:'#f4f7fc'},posts);mk('rect',{x:lx,y:ty2-1,width:rx2-lx,height:1.6,fill:'#9aa6bd'},posts);
+  // LED boards
+  const t='FRANTIHO FOTBALOVÁ AKADEMIE   ★   ABECEDA CUP 2026   ★   SPORT A ČTENÍ   ★   ';$('#ledText').textContent=t.repeat(8);
+  // ball pattern
+  const pat=$('#ballPat');const pent=(cx,cy,r,rot)=>{let s='';for(let i=0;i<5;i++){const a=rot+i*Math.PI*2/5;s+=(i?'L':'M')+(cx+r*Math.cos(a)).toFixed(3)+','+(cy+r*Math.sin(a)).toFixed(3);}return s+'Z';};
+  let pd=pent(0,0,.36,-Math.PI/2);for(let i=0;i<5;i++){const a=-Math.PI/2+Math.PI/5+i*Math.PI*2/5;pd+=pent(Math.cos(a)*.92,Math.sin(a)*.92,.36,a+Math.PI);}
+  mk('path',{d:pd,fill:'#16233f'},pat);
+  for(let i=0;i<5;i++){const a=-Math.PI/2+i*Math.PI*2/5;mk('path',{d:`M${(Math.cos(a)*.36).toFixed(3)},${(Math.sin(a)*.36).toFixed(3)} L${(Math.cos(a)*.62).toFixed(3)},${(Math.sin(a)*.62).toFixed(3)}`,stroke:'#e5383b','stroke-width':.07},pat);}
+  // intro letters
+  const fl2=$('#floatL');['A','B','C','Č','D','Ď','E','F'].forEach((l,i)=>{const t=mk('text',{},fl2);t.textContent=l;});
+  buildNet(0,0,0);
+}
+function pick2(a,R){return a[Math.floor(R()*a.length)];}
+/* net with ripple */
+function buildNet(B,bx,bh){
+  const BD=-2,BH=1.6,TOP=2.44;
+  const back=(X,h)=>{const dd=B?-B*Math.exp(-((X-bx)**2/1.4+(h-bh)**2/.5)):0;return proj(X,BD+dd,h);};
+  const pt=p=>p[0].toFixed(1)+','+p[1].toFixed(1);
+  let s='';
+  for(let X=-3.66;X<=3.67;X+=.3){s+='M';for(let h=0;h<=BH+.001;h+=.2)s+=(h?'L':'')+pt(back(X,Math.min(h,BH)));}
+  for(let h=0;h<=BH+.001;h+=.25){s+='M';for(let X=-3.66;X<=3.67;X+=.3)s+=(X>-3.66?'L':'')+pt(back(X,h));}
+  $('#netBack').setAttribute('d',s);
+  let t='';const hT=d=>TOP+(BH-TOP)*(-d/2);
+  for(const sx of[-3.66,3.66]){for(let d=0;d>=BD-.001;d-=.3)t+='M'+pt(proj(sx,d,0))+'L'+pt(proj(sx,d,hT(d)));
+    for(let h=0;h<TOP;h+=.25){const dm=h<=BH?BD:-2*(TOP-h)/(TOP-BH);t+='M'+pt(proj(sx,0,h))+'L'+pt(proj(sx,dm,h));}}
+  for(let X=-3.66;X<=3.67;X+=.3)t+='M'+pt(proj(X,0,TOP))+'L'+pt(back(X,BH));
+  for(let d=0;d>=BD;d-=.4)t+='M'+pt(proj(-3.66,d,hT(d)))+'L'+pt(proj(3.66,d,hT(d)));
+  $('#netSide').setAttribute('d',t);
+  $('#netFill').setAttribute('d',`M${pt(back(-3.66,0))} L${pt(back(3.66,0))} L${pt(back(3.66,BH))} L${pt(back(-3.66,BH))}Z`);
+}
+let ripple=null;
+function startRipple(bx,bh){ripple={t0:performance.now(),bx,bh};}
+function renderRipple(now){if(!ripple)return;const t=(now-ripple.t0)/1000;if(t>1.6){buildNet(0,0,0);ripple=null;return;}
+  const B=.75*Math.exp(-t*3)*Math.cos(t*14)*(t<.12?t/.12:1)+.35*Math.exp(-t*2.2);buildNet(B,ripple.bx,ripple.bh);}
+
+/* stadium life */
+let jumpUntil=0,flashUntil=0;
+function renderCrowd(now){const a=$('#crowdA'),b=$('#crowdB');
+  if(now<jumpUntil){const ph=Math.floor(now/170)%2;a.setAttribute('transform',`translate(0,${ph?-4:0})`);b.setAttribute('transform',`translate(0,${ph?0:-4})`);}
+  else{a.removeAttribute('transform');b.setAttribute('transform',`translate(0,${(Math.sin(now/900)*.6).toFixed(2)})`);}
+  if(now<flashUntil){for(const c of $('#flashes').children)c.setAttribute('opacity',Math.random()<.08?1:0);}
+}
+function crowdParty(ms){jumpUntil=performance.now()+ms;flashUntil=performance.now()+ms*.7;setTimeout(()=>{for(const c of $('#flashes').children)c.setAttribute('opacity',0);},ms*.7+50);}
+function led(text){const el=$('#ledText'),old=el.textContent;el.textContent=(text+'   ★   ').repeat(12);setTimeout(()=>{el.textContent=old;},3200);}
+
+/* ---------- fx canvas ---------- */
+const fx=$('#fx'),fc=fx.getContext('2d');let parts=[];
+function sizeFx(){const d=Math.min(2,devicePixelRatio||1);fx.width=innerWidth*d;fx.height=innerHeight*d;fc.setTransform(d,0,0,d,0,0);}
+sizeFx();addEventListener('resize',sizeFx);
+const CC=['#ffc23a','#e5383b','#ffffff','#5aa9ff','#2fd18b','#ff6fb5'];
+function confetti(n=150,x=innerWidth/2,y=innerHeight*.3){if(RM)n=30;for(let i=0;i<n;i++)parts.push({t:'c',x,y,vx:(Math.random()-.5)*16,vy:-Math.random()*13-3,g:.3,life:1,dc:.005+Math.random()*.006,c:pick(CC),w:6+Math.random()*7,h:3+Math.random()*4,r:Math.random()*6,vr:(Math.random()-.5)*.35});}
+function firework(x,y){const c=pick(CC);const n=RM?20:70;for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=1.5+Math.random()*4.5;parts.push({t:'f',x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,g:.05,life:1,dc:.011+Math.random()*.006,c,sz:2+Math.random()*1.5});}snd.boom();}
+function w2s(x,y){const p=svg.createSVGPoint();p.x=x;p.y=y;const m=svg.getScreenCTM();return m?p.matrixTransform(m):{x:innerWidth/2,y:innerHeight/3};}
+function renderFx(){fc.clearRect(0,0,innerWidth,innerHeight);if(!parts.length)return;
+  for(const p of parts){p.vy+=p.g;p.vx*=.985;p.x+=p.vx;p.y+=p.vy;p.life-=p.dc;
+    if(p.t==='c'){p.r+=p.vr;fc.save();fc.globalAlpha=Math.max(0,Math.min(1,p.life*2));fc.translate(p.x,p.y);fc.rotate(p.r);fc.fillStyle=p.c;fc.fillRect(-p.w/2,-p.h/2,p.w,p.h);fc.restore();}
+    else{fc.globalCompositeOperation='lighter';fc.globalAlpha=Math.max(0,p.life);fc.fillStyle=p.c;fc.beginPath();fc.arc(p.x,p.y,p.sz*2.6,0,7);fc.globalAlpha*=.25;fc.fill();fc.globalAlpha=Math.max(0,p.life);fc.beginPath();fc.arc(p.x,p.y,p.sz,0,7);fc.fill();fc.globalCompositeOperation='source-over';}}
+  fc.globalAlpha=1;parts=parts.filter(p=>p.life>0&&p.y<innerHeight+40);}
+
+/* ---------- sound ---------- */
+let AC=null,master=null,noiseBuf=null,soundOn=true;
+const snd={
+  init(){if(AC)return;try{AC=new (window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=soundOn?.9:0;master.connect(AC.destination);
+    noiseBuf=AC.createBuffer(1,AC.sampleRate*3,AC.sampleRate);const d=noiseBuf.getChannelData(0);let last=0;for(let i=0;i<d.length;i++){const w=Math.random()*2-1;last=(last+.04*w)/1.04;d[i]=last*3.2+w*.25;}
+    const src=AC.createBufferSource();src.buffer=noiseBuf;src.loop=true;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=520;bp.Q.value=.6;const g=AC.createGain();g.gain.value=.11;
+    const lfo=AC.createOscillator(),lg=AC.createGain();lfo.frequency.value=.13;lg.gain.value=.035;lfo.connect(lg);lg.connect(g.gain);lfo.start();src.connect(bp);bp.connect(g);g.connect(master);src.start();this.crowd=g;}catch(e){AC=null;}},
+  duck(on){if(this.crowd)this.crowd.gain.setTargetAtTime(on?.025:.11,AC.currentTime,.3);},
+  noise(f,q,gain,att,dur,type='bandpass'){if(!AC)return;const t=AC.currentTime,s=AC.createBufferSource();s.buffer=noiseBuf;const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(gain,t+att);g.gain.exponentialRampToValueAtTime(.0001,t+dur);s.connect(fl);fl.connect(g);g.connect(master);s.start(t,Math.random()*2);s.stop(t+dur+.1);},
+  tone(f,dur,gain=.08,delay=0,type='sine',f2){if(!AC)return;const t=AC.currentTime+delay,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(gain,t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(master);o.start(t);o.stop(t+dur+.05);},
+  cheer(l=1,dur=3){this.noise(900,.5,.5*l,.25,dur);this.noise(1900,.8,.18*l,.3,dur*.8);this.noise(380,.7,.25*l,.3,dur*.9);},
+  whistle(n=1){if(!AC)return;for(let i=0;i<n;i++){const t=AC.currentTime+i*.42,o=AC.createOscillator(),v=AC.createOscillator(),vg=AC.createGain(),g=AC.createGain();o.frequency.value=2850;v.frequency.value=38;vg.gain.value=90;v.connect(vg);vg.connect(o.frequency);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.07,t+.02);g.gain.setValueAtTime(.07,t+(i===n-1?.55:.25));g.gain.exponentialRampToValueAtTime(.0001,t+(i===n-1?.7:.32));o.connect(g);g.connect(master);o.start(t);v.start(t);o.stop(t+.8);v.stop(t+.8);}},
+  kick(){this.tone(140,.22,.5,0,'sine',42);this.noise(2500,.7,.15,.003,.06);},
+  swish(){this.noise(3200,.4,.25,.02,.35,'highpass');},
+  chime(){this.tone(784,.35,.09);this.tone(1175,.45,.08,.1);this.tone(1568,.6,.06,.2);},
+  soft(){this.tone(392,.25,.06);this.tone(330,.35,.05,.12);},
+  key(){this.tone(1500,.05,.03);},
+  boom(){this.noise(220,.6,.25,.005,.7,'lowpass');this.noise(3000,.5,.05,.01,.9);},
+  ooh(){this.noise(320,.8,.35,.3,1.8);this.noise(700,.9,.15,.3,1.4);},
+  glove(){this.tone(90,.12,.4,0,'sine',55);this.noise(900,.6,.2,.003,.08);},
+  win(){[523,659,784,1047,1319].forEach((f,i)=>this.tone(f,.5,.07,i*.11,'triangle'));}
+};
+function setSound(on){soundOn=on;$('#snd').textContent='Zvuk: '+(on?'zapnutý':'vypnutý');if(master)master.gain.value=on?.9:0;if(!on&&'speechSynthesis'in window)speechSynthesis.cancel();}
+$('#snd').onclick=()=>setSound(!soundOn);
+
+/* ---------- speech with mouth + karaoke subtitles ---------- */
+let voice=null;
+function loadVoices(){if(!('speechSynthesis'in window))return;const vs=speechSynthesis.getVoices();voice=vs.find(v=>/^cs/i.test(v.lang)&&/jakub|anton/i.test(v.name))||vs.find(v=>/^cs/i.test(v.lang))||null;
+  $('#voiceNote').textContent=voice?'Zapni si zvuk. Franta tě přivítá.':(vs.length?'Zapni si zvuk. Tento počítač nemá český hlas, Franta bude mluvit v titulcích.':'Zapni si zvuk.');}
+if('speechSynthesis'in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices;}
+function showSubs(text){const s=$('#subs');s.hidden=false;s.innerHTML='';const words=[];let i=0;text.split(' ').forEach((w,k)=>{const sp=document.createElement('span');sp.textContent=w;s.appendChild(sp);if(k)s.insertBefore(document.createTextNode(' '),sp);words.push({start:i,el:sp});i+=w.length+1;});return words;}
+function speak(text){return new Promise(res=>{
+  const words=showSubs(text);let done=false,gotB=false;const timers=[];
+  const hl=ci=>{words.forEach(w=>w.el.classList.toggle('on',ci>=w.start&&ci<w.start+w.el.textContent.length+1));};
+  const fin=()=>{if(done)return;done=true;talking=false;timers.forEach(clearTimeout);words.forEach(w=>w.el.classList.remove('on'));res();};
+  const est=Math.max(1500,text.length*68);
+  talking=true;
+  words.forEach(w=>timers.push(setTimeout(()=>{if(!gotB)hl(w.start);},w.start/text.length*est)));
+  if(voice&&soundOn){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.voice=voice;u.lang=voice.lang;u.rate=1.02;u.pitch=1.3;
+      u.onboundary=e=>{if(e.name&&e.name!=='word')return;gotB=true;hl(e.charIndex);mouthT=1;};
+      u.onend=fin;u.onerror=fin;speechSynthesis.speak(u);timers.push(setTimeout(fin,est+3000));}catch(e){timers.push(setTimeout(fin,est));}}
+  else timers.push(setTimeout(fin,est));
+});}
+function hideSubs(){$('#subs').hidden=true;}
+
+/* ---------- UI helpers ---------- */
+function showRead(t){const c=$('#readCard');c.textContent=t;c.hidden=false;c.classList.remove('pop');void c.offsetWidth;c.classList.add('pop');}
+function hideRead(){$('#readCard').hidden=true;}
+function flash(id,ms){const e=$(id);e.hidden=false;e.style.animation='none';void e.offsetWidth;e.style.animation='';setTimeout(()=>e.hidden=true,ms);}
+function setGoals(){[...$('#goals').children].forEach((g,i)=>g.classList.toggle('on',i<G.goals));$('#rnd').textContent=Math.min(5,G.round+1);}
+function cine(on){$('#app').classList.toggle('cine',on);}
+
+/* ---------- game data ---------- */
+const ALPHA=['A','B','C','Č','D','Ď','E','F','G','H','Ch','I','J','K','L','M','N','Ň','O','P','Q','R','Ř','S','Š','T','Ť','U','V','W','X','Y','Z','Ž'];
+const ROUNDS=[['D','E','F'],['G','H','Ch','I','J'],['K','L','M','N','O'],['P','R','S','T'],['U','V','Z','Ž']];
+const AIM=['Klikni na míč a vystřel na bránu!','Brankář je připravený. Klikni na míč!','Zamiř do rohu. Klikni na míč!','Fanoušci čekají na gól. Klikni na míč!','Poslední střela zápasu. Klikni na míč!'];
+const GOALL=['Gól! Brankář skočil na druhou stranu.','Gól! Míč letí přímo do sítě.','Gól! Celý stadion tleská.','Gól! Brankář se jen ohlédl.','Gól! Fanoušci zpívají tvé jméno.'];
+const PRAISE1=['Výborně! Všech {n} písmen je na svém místě.','Paráda! Celá řada sedí napoprvé.','Přesně tak! Abecedu až po {L} zvládáš.'];
+const PRAISE2=['Opravil jsi to sám. Teď je celá řada správně!','Super! Našel jsi, co chybělo, a řada sedí.','Výborně! Nevzdal ses a máš to správně.'];
+const FAIL1=['Skoro! Oranžová písmenka ještě oprav.','Většina už sedí. Podívej se na oranžové čtverečky.','Dobrý začátek! Oranžové čtverečky zkus ještě jednou.'];
+const G={round:0,goals:0,mode:'gate',phase:'',target:'',n:0,att:0,letters:0,clean:0};
+
+/* ---------- intro ---------- */
+let introTok=0;
+async function playIntro(){
+  const tk=++introTok,alive=()=>tk===introTok;G.mode='intro';
+  resetActors();A.boyF.vis=1;A.boyB.vis=0;Object.assign(A.boyF,{X:INTRO_F.X,d:INTRO_F.d,flip:1,wave:0,jump:0});
+  $('#hud').hidden=true;hideRead();cine(true);$('#skip').hidden=false;
+  shake=1;Object.assign(cam,{x:1010,y:-40,w:560});
+  $('#lower3').hidden=false;
+  const T='intro';
+  camTo({x:220,y:-10,w:620},3600,E.ios,T);
+  await sleep(1600);if(!alive())return;snd.whistle(1);
+  await sleep(2000);if(!alive())return;
+  await camTo({x:60,y:40,w:1480},1700,E.io,T);if(!alive())return;
+  $('#lower3').hidden=true;
+  await camTo(boyMedFrame(INTRO_F.X,INTRO_F.d),1300,E.io,T);if(!alive())return;
+  // line 1: wave + push in on face
+  A.boyF.wave=1;camTo(faceFrame(INTRO_F.X,INTRO_F.d,250),2800,E.ios,T);
+  await speak('Ahoj! Vítej ve Frantiho fotbalové akademii!');if(!alive())return;
+  tween(300,p=>A.boyF.wave=1-p,E.io,T);
+  // line 2: ball then goal
+  const[bx,by]=proj(0,11,BALL_R);camTo(frame(bx,by-6,190),900,E.io,T);
+  tapBall(T);
+  const l2=speak('Dneska si spolu zastřílíme na branku');
+  await sleep(1300);if(!alive())return;camTo(frame(800,420,720),1500,E.io,T);
+  await l2;if(!alive())return;
+  // line 3: letters around the boy
+  const mf=boyMedFrame(INTRO_F.X,INTRO_F.d,600);mf.x-=40;mf.y-=40;camTo(mf,900,E.io,T);showLetters();
+  await speak('a procvičíme českou abecedu.');if(!alive())return;
+  // line 4: keeper close-up, then back to the boy
+  hideLetters();const[kx,ky,kz]=proj(0,.6);camTo(frame(kx,ky-150*(F/kz)*2/300,230),700,E.out,T);
+  tween(1400,p=>A.keeper.clap=p,E.lin,T);
+  const l4=speak('Tak pojď, ukážeme brankáři, co umíš!');
+  await sleep(1350);if(!alive())return;camTo(faceFrame(INTRO_F.X,INTRO_F.d,300),800,E.io,T);
+  await l4;if(!alive())return;A.keeper.clap=0;hideSubs();
+  // turn around, glide into the game view
+  await turnToGame(T);if(!alive())return;
+  enterGame(false);
+}
+function tapBall(T){tween(1100,p=>{A.ball.h=Math.abs(Math.sin(p*Math.PI*2))*.35*(1-p*.4);A.ball.rot=p*300;},E.lin,T);}
+function showLetters(){const g=$('#floatL'),[x,y,Z]=proj(INTRO_F.X,INTRO_F.d),s=boyScale(Z),hy=y-268*s;
+  const n=g.children.length;[...g.children].forEach((t,i)=>{const a=Math.PI*(1.08+i*.84/(n-1));t.setAttribute('x',(x+Math.cos(a)*150).toFixed(1));t.setAttribute('y',(hy-10+Math.sin(a)*105).toFixed(1));t.style.opacity=0;t.style.transition='opacity .35s';setTimeout(()=>t.style.opacity=1,i*170);});
+  g.setAttribute('opacity',1);}
+function hideLetters(){$('#floatL').setAttribute('opacity',0);}
+async function turnToGame(T){
+  await tween(220,p=>A.boyF.flip=1-p,E.inq,T);
+  A.boyF.vis=0;Object.assign(A.boyB,{vis:1,X:INTRO_F.X,d:INTRO_F.d,flip:0});
+  tween(220,p=>A.boyB.flip=p,E.outq,T);
+  tween(1600,p=>{A.boyB.X=lerp(INTRO_F.X,START_B.X,p);A.boyB.d=lerp(INTRO_F.d,START_B.d,p);},E.io,T);
+  cine(false);
+  await camTo({x:0,y:0,w:1600},2200,E.io,T);
+}
+function skipIntro(){if(G.mode!=='intro')return;introTok++;killTweens('intro');if('speechSynthesis'in window)speechSynthesis.cancel();talking=false;hideSubs();hideLetters();$('#lower3').hidden=true;enterGame(true);}
+$('#skip').onclick=skipIntro;
+
+function resetActors(){Object.assign(A.ball,{X:SPOT.X,d:SPOT.d,h:0,rot:0,vis:1,sc:1});$('#slotFront').prepend(ballWrap);
+  Object.assign(A.keeper,{X:0,d:.6,h:0,rot:0,arms:0,clap:0,idle:1});
+  Object.assign(A.boyB,{X:START_B.X,d:START_B.d,flip:1,leg:0,arms:0,jump:0,lean:0});}
+function enterGame(fast){
+  G.mode='game';cine(false);shake=0;$('#skip').hidden=true;hideSubs();
+  A.boyF.vis=0;A.boyB.vis=1;resetActors();A.keeper.clap=0;
+  if(fast)camTo({x:0,y:0,w:1600},700,E.io);
+  $('#hud').hidden=false;setGoals();startRound();
+}
+
+/* ---------- rounds ---------- */
+function startRound(){
+  G.phase='aim';const pool=ROUNDS[G.round];G.target=pick(pool);const sv=SAVES[G.round];G.savesLeft=sv[0]+Math.floor(Math.random()*(sv[1]-sv[0]+1));
+  setGoals();showRead(AIM[G.round]);ballWrap.classList.add('aim');$('#aimRing').style.display='';
+  svg.style.cursor='';
+}
+ballWrap.addEventListener('click',()=>{if(G.mode==='game'&&G.phase==='aim')shoot();});
+/* shot types: keeper always dives toward the ball's side (or is beaten another way) */
+const SHOTS={
+  vysoko:{label:'DO ŠIBENICE!',line:'Gól! Míč proletěl brankáři nad rukavicemi.'},
+  nizko:{label:'K TYČI!',line:'Gól! Brankář skočil, ale míč proletěl pod ním.'},
+  gajdy:{label:'GAJDY!',line:'Gól! Míč proletěl brankáři mezi nohama. Tomu se říká gajdy!'},
+  dlouba:{label:'DLOUBÁK!',line:'Brankář skočil stranou a míč šel doprostřed. To byl dloubák!'},
+  falš:{label:'FALŠ!',line:'Gól! Míč se zatočil kolem rukavic. To byla falšovaná střela!'}
+};
+function shotOrder(){const o=['vysoko','nizko','falš','dlouba'].sort(()=>Math.random()-.5);o.splice(1+Math.floor(Math.random()*3),0,'gajdy');return o;}
+G.shots=shotOrder();
+function keeperDive(side,{X=1.9,rot=74,lift=.5,dur=560,delay=110}={}){return sleep(delay).then(()=>{A.keeper.idle=0;const k0=A.keeper.X;
+  return tween(dur,p=>{A.keeper.X=lerp(k0,side*X,E.out(p));A.keeper.rot=side*rot*E.out(p);A.keeper.arms=Math.min(1,p*2);A.keeper.h=Math.sin(p*Math.PI)*lift;},E.lin);});}
+const SAVES=[[1,2],[2,3],[2,4],[3,4],[3,5]];
+const SAVE_LINES=['Chytil! Brankář je dnes rychlý. Zkus to znovu.','Zákrok! Brankář míč chytil. Vystřel ještě jednou.','Brankář se natáhl a míč chytil. Další střela!','Těsně! Brankář byl rychlejší. Zkus to znovu.','Brankář má dobrý den. Ale ty to nevzdáš!'];
+function gloveMid(){const k=A.keeper,a=k.arms*115*Math.PI/180,r=k.rot*Math.PI/180;
+  const arm=(sx,sign)=>{const vx=67*sx,vy=81,an=-sign*a;return[44*sx+vx*Math.cos(an)-vy*Math.sin(an),-228+vx*Math.sin(an)+vy*Math.cos(an)];};
+  const L=arm(-1,-1),Rr=arm(1,1),mx=(L[0]+Rr[0])/2,my=(L[1]+Rr[1])/2+20;
+  const rx=mx*Math.cos(r)-(my+150)*Math.sin(r),ry=mx*Math.sin(r)+(my+150)*Math.cos(r)-150-k.h*150;
+  return{X:k.X+rx/150,h:Math.max(0,-ry/150-BALL_R)};}
+async function save(){
+  const side=Math.random()<.5?-1:1,kind=pick(['side','side','low','middle']);
+  await tween(430,p=>{A.boyB.X=lerp(START_B.X,-.33,p);A.boyB.d=lerp(START_B.d,11.45,p);A.boyB.jump=Math.abs(Math.sin(p*Math.PI*3))*8;A.boyB.lean=p*-4;},E.lin);
+  snd.kick();tween(380,p=>{A.boyB.leg=Math.sin(p*Math.PI);},E.lin);
+  A.keeper.idle=0;const k0=A.keeper.X;
+  if(kind==='middle')tween(500,p=>{A.keeper.X=lerp(k0,0,p);A.keeper.arms=-.12*p;},E.out);
+  else if(kind==='low')tween(560,p=>{A.keeper.X=lerp(k0,side*1.7,E.out(p));A.keeper.rot=side*86*E.out(p);A.keeper.arms=Math.min(1,p*2);A.keeper.h=Math.sin(p*Math.PI)*.18;},E.lin);
+  else tween(600,p=>{A.keeper.X=lerp(k0,side*1.8,E.out(p));A.keeper.rot=side*70*E.out(p);A.keeper.arms=Math.min(1,p*2);A.keeper.h=Math.sin(p*Math.PI)*.55;},E.lin);
+  await tween(kind==='middle'?520:600,p=>{const g=gloveMid();A.ball.X=lerp(0,g.X,p);A.ball.h=lerp(0,g.h,p)+Math.sin(Math.PI*p)*(kind==='low'?.1:.5);A.ball.d=lerp(11,.75,p);A.ball.rot+=14;},E.outq);
+  snd.glove();snd.ooh();
+  // hold the ball while the keeper lands
+  const hold=tween(700,()=>{const g=gloveMid();A.ball.X=g.X;A.ball.h=g.h;},E.lin);
+  tween(400,p=>{A.keeper.h=A.keeper.h*(1-p);},E.io);
+  tween(600,p=>{A.boyB.leg=0;A.boyB.lean=0;A.boyB.jump=0;A.boyB.arms=Math.sin(p*Math.PI)*.35;},E.lin);
+  await hold;showRead(pick(SAVE_LINES));
+  const kr=A.keeper.rot,ka=A.keeper.arms;
+  await tween(650,p=>{A.keeper.rot=lerp(kr,0,p);A.keeper.arms=lerp(ka,0,p);A.keeper.h=0;const g=gloveMid();A.ball.X=g.X;A.ball.h=g.h;},E.io);
+  await sleep(350);
+  // keeper rolls the ball back to the spot
+  const bx=A.ball.X,bh=A.ball.h,bxk=A.keeper.X;
+  tween(1400,p=>{A.boyB.X=lerp(-.33,START_B.X,p);A.boyB.d=lerp(11.45,START_B.d,p);},E.io);
+  tween(900,p=>{A.keeper.X=lerp(bxk,0,p);},E.io).then(()=>A.keeper.idle=1);
+  await tween(1300,p=>{A.ball.X=lerp(bx,0,p);A.ball.h=bh*(1-Math.min(1,p*4));A.ball.d=lerp(.75,11,p);A.ball.rot-=9;},E.outq);
+  Object.assign(A.ball,{X:0,d:11,h:0});
+  G.savesLeft--;G.phase='aim';$('#aimRing').style.display='';
+}
+async function shoot(){
+  G.phase='shoot';hideRead();$('#aimRing').style.display='none';
+  if(G.savesLeft>0){await save();return;}
+  const type=G.shots[G.round%5],side=Math.random()<.5?-1:1;G.shot=type;
+  if(type==='gajdy'){A.keeper.idle=0;const k0=A.keeper.X;tween(300,p=>A.keeper.X=lerp(k0,0,p));}
+  await tween(430,p=>{A.boyB.X=lerp(START_B.X,-.33,p);A.boyB.d=lerp(START_B.d,11.45,p);A.boyB.jump=Math.abs(Math.sin(p*Math.PI*3))*8;A.boyB.lean=p*-4;},E.lin);
+  if(type==='dlouba'){snd.tone(180,.15,.25,0,'sine',90);}else snd.kick();
+  tween(380,p=>{A.boyB.leg=Math.sin(p*Math.PI);},E.lin);
+  let path,dur=640,ease=E.outq,layerD=0,end;
+  if(type==='vysoko'){keeperDive(side,{X:1.7,rot:68,lift:.45});end={X:side*2.85,h:2.12};path=p=>({X:end.X*p,h:end.h*p+Math.sin(Math.PI*p)*.7});}
+  else if(type==='nizko'){keeperDive(side,{X:1.8,rot:82,lift:.95,dur:600,delay:60});end={X:side*2.7,h:0};path=p=>({X:end.X*p,h:Math.sin(Math.PI*p)*.12});}
+  else if(type==='falš'){keeperDive(side,{X:1.85,rot:72,lift:.5,delay:200});end={X:side*3.2,h:1.0};dur=760;path=p=>({X:end.X*p+side*1.5*Math.sin(Math.PI*p),h:end.h*p+Math.sin(Math.PI*p)*.9});}
+  else if(type==='gajdy'){end={X:0,h:0};layerD=.75;path=p=>({X:0,h:0});
+    setTimeout(()=>tween(500,p=>{A.keeper.arms=-.25*Math.sin(p*Math.PI);A.keeper.h=Math.sin(p*Math.PI)*.18;},E.lin),330);}
+  else{keeperDive(side,{X:2.0,rot:80,lift:.4,delay:0,dur:520});end={X:side*.15,h:1.5};dur=1150;ease=E.lin;path=p=>({X:end.X*p,h:end.h*p+Math.sin(Math.PI*p)*2.1});}
+  let moved=false;
+  await tween(dur,p=>{const q=path(p);A.ball.X=q.X;A.ball.h=q.h;A.ball.d=lerp(11,-1.55,p);A.ball.rot+=(type==='dlouba'?5:14)*(type==='falš'?side:1);
+    if(!moved&&A.ball.d<layerD){moved=true;$('#slotIn').appendChild(ballWrap);}},ease);
+  startRipple(end.X,Math.max(.3,end.h));snd.swish();
+  tween(420,p=>{A.ball.d=-1.55-.25*p;A.ball.h=end.h*(1-E.inq(p));A.ball.rot+=4;},E.lin);
+  goal();
+}
+async function goal(){
+  G.goals++;setGoals();snd.cheer(1.1,3.2);snd.whistle(1);crowdParty(2600);led('GÓÓÓL!');
+  $('#goalKind').textContent=SHOTS[G.shot].label;flash('#goalTxt',1700);confetti(170);
+  camTo({x:90,y:40,w:1420},260,E.out).then(()=>camTo({x:0,y:0,w:1600},700,E.io));
+  tween(1200,p=>{A.boyB.arms=Math.min(1,p*3);A.boyB.jump=Math.abs(Math.sin(p*Math.PI*3))*30;A.boyB.leg=0;A.boyB.lean=0;},E.lin);
+  await sleep(1500);showRead(SHOTS[G.shot].line);
+  const kr=A.keeper.rot,ka=A.keeper.arms;tween(900,p=>{A.keeper.rot=lerp(kr,0,p);A.keeper.h=0;A.keeper.arms=lerp(ka,0,p);},E.io).then(()=>{tween(700,p=>{A.keeper.X=lerp(A.keeper.X,0,p);},E.io).then(()=>A.keeper.idle=1);});
+  tween(500,p=>A.boyB.arms=1-p);
+  await sleep(2000);
+  $('#lpL').textContent=G.target;flash('#letterPop',1500);snd.chime();
+  await sleep(1250);hideRead();openPanel();
+}
+
+/* ---------- answer panel ---------- */
+let inputs=[],activeIdx=0,locked=false;
+const KB=[['Č','Ď','Ň','Ř','Š','Ť','Ž'],['Q','W','E','R','T','Z','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['Y','X','C','V','B','N','M'],['Ch','⌫']];
+(function buildKb(){const kb=$('#kb');KB.forEach(r=>{const row=document.createElement('div');row.className='r';r.forEach(l=>{const b=document.createElement('button');b.className='k'+(l.length>1?' wide':'');b.textContent=l==='⌫'?'Smazat':l;b.dataset.l=l;b.type='button';row.appendChild(b);});kb.appendChild(row);});
+  const h=document.createElement('p');h.className='kbh';h.textContent='Piš na klávesnici, nebo klikej na písmena.';kb.appendChild(h);
+  kb.addEventListener('mousedown',e=>{if(e.target.closest('.k'))e.preventDefault();});
+  kb.addEventListener('click',e=>{const b=e.target.closest('.k');if(!b||locked)return;const l=b.dataset.l;
+    if(l==='⌫'){const i=activeIdx;if(inputs[i].value){inputs[i].value='';clean(i);}else if(i>0){inputs[i-1].value='';clean(i-1);focusBox(i-1);}snd.key();return;}
+    put(activeIdx,l);});})();
+function openPanel(){
+  G.phase='answer';G.att=0;locked=false;const idx=ALPHA.indexOf(G.target);G.n=idx+1;
+  $('#taskText').textContent=`Napiš abecedu od A až po ${G.target}.`;
+  const bx=$('#boxes');bx.innerHTML='';inputs=[];
+  for(let i=0;i<idx;i++){const inp=document.createElement('input');inp.className='bx';inp.id='bx'+i;inp.setAttribute('autocomplete','off');inp.setAttribute('autocapitalize','characters');inp.spellcheck=false;inp.setAttribute('aria-label',`Písmeno ${i+1}`);
+    inp.addEventListener('pointerdown',()=>{dictFull=false;cur.idx=-1;});
+    inp.addEventListener('focus',()=>{activeIdx=i;setTimeout(()=>{if(document.activeElement===inp)inp.select();},0);});
+    inp.addEventListener('beforeinput',e=>{if(locked){e.preventDefault();return;}if(e.inputType==='insertText'&&e.data){e.preventDefault();const v=norm(e.data);if(v)put(i,v.endsWith('CH')?'Ch':v.slice(-1));}});
+    inp.addEventListener('input',e=>{if(e.isComposing)return;handleInput(i);});
+    inp.addEventListener('compositionend',e=>{const v=norm(e.data||'');if(v){inputs[i].value='';put(i,v.slice(-1));}else handleInput(i);});
+    inp.addEventListener('keydown',e=>onBoxKey(e,i));
+    bx.appendChild(inp);inputs.push(inp);}
+  const t=document.createElement('div');t.className='bx tgt';t.textContent=G.target;t.title='Tvoje písmeno';bx.appendChild(t);
+  $('#msg').textContent='';$('#msg').className='msg';$('#done').hidden=false;$('#next').hidden=true;
+  $('#panel').classList.add('open');camTo({x:250,y:200,w:1100},900,E.io);
+  setTimeout(()=>{if(!inputs.includes(document.activeElement))focusBox(0);dictFull=false;cur.idx=-1;if(micPref){micListen();snd.duck(true);if(rec)micSt('Poslouchám. Říkej písmena nahlas, jedno po druhém.');}},650);
+  if(!micPref)micSt(SR?'Klikni na Diktovat a říkej písmena nahlas: á, bé, cé…':'Diktování umí prohlížeč Chrome nebo Edge. Tady piš na klávesnici.',SR?'':'warn');
+}
+/* dictation: Czech letter names -> letters */
+const NAMES={};
+[['A','a á aa ah'],['B','b bé be bý'],['C','c cé ce'],['Č','č čé če čo'],['D','d dé de'],['Ď','ď ďé ďe dě dje'],['E','e é ee éé'],['F','f ef eff'],['G','g gé ge'],
+ ['H','h há ha'],['Ch','ch chá cha chá'],['I','i í ii'],['J','j jé je'],['K','k ká ka'],['L','l el ell'],['M','m em emm'],['N','n en enn'],['Ň','ň eň ně'],['O','o ó oo'],
+ ['P','p pé pe'],['Q','q kvé kve kú'],['R','r er err'],['Ř','ř eř'],['S','s es ess'],['Š','š eš'],['T','t té te'],['Ť','ť ťé tě tje'],['U','u ú ů'],['V','v vé ve'],
+ ['W','w dvé'],['X','x iks ix'],['Y','y'],['Z','z zet zed'],['Ž','ž žet']].forEach(([L,ws])=>ws.split(' ').forEach(w=>NAMES[w]=L));
+function parseLetters(raw){
+  let t=' '+raw.replace(/[.,!?;:"'„“()]/g,' ').replace(/-/g,' ')+' ';
+  const out=[];
+  t=t.replace(/dvojit\S*\s+v\S*/gi,' W ').replace(/tvrd\S*\s+[yý]\b/gi,' Y ').replace(/m[ěe]kk\S*\s+[ií]\b/gi,' I ').replace(/[iy]psilon|ypsylon/gi,' Y ');
+  for(const w0 of t.split(/\s+/)){if(!w0)continue;const w=w0.toLocaleLowerCase('cs-CZ');
+    if(/^(smazat|smaž|zpět|zpátky)$/.test(w)){out.push('⌫');continue;}
+    if(/^(hotovo|konec)$/.test(w)){out.push('✓');continue;}
+    if(NAMES[w]){out.push(NAMES[w]);continue;}
+    if(w0.length>=2&&w0.length<=6&&w0===w0.toLocaleUpperCase('cs-CZ')&&/^\p{L}+$/u.test(w0)){ // "ABC" style
+      for(let i=0;i<w.length;i++){if(w[i]==='c'&&w[i+1]==='h'){out.push('Ch');i++;continue;}const L=NAMES[w[i]];if(L)out.push(L);}}
+  }
+  return out;}
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null,micPref=false,micBlocked=false,dictFull=false,cur={idx:-1,start:0,done:[]};
+const isL=x=>x!=='⌫'&&x!=='✓';
+/* write letters as soon as the recognizer hears them (interim results), fix them if the final text differs */
+function applyLetters(ls){for(let k=0;k<ls.length;k++){const t=cur.start+k;
+  if(t>=inputs.length){dictFull=true;micSt('Všechna okýnka jsou vyplněná. Řekni „hotovo“, nebo klikni na Hotovo.');return;}
+  if(k<cur.done.length){if(cur.done[k]!==ls[k]){inputs[t].value=ls[k];clean(t);cur.done[k]=ls[k];}continue;}
+  inputs[t].value=ls[k];clean(t);cur.done.push(ls[k]);snd.key();
+  if(t+1<inputs.length)focusBox(t+1);else{dictFull=true;focusBox(t);}}}
+function micSt(html,cls=''){const m=$('#micSt');m.innerHTML=html;m.className='micSt '+cls;}
+function micUi(on){const b=$('#mic');b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);$('#micTx').textContent=on?'Poslouchám…':'Diktovat';}
+function micListen(){
+  if(!SR){micSt('Diktování umí prohlížeč Chrome nebo Edge. Tady piš na klávesnici.','warn');micPref=false;return;}
+  if(rec||micBlocked)return;
+  const r=new SR();rec=r;r.lang='cs-CZ';r.continuous=true;r.interimResults=true;r.maxAlternatives=3;
+  r.onstart=()=>{micUi(true);snd.duck(G.phase==='answer');if(G.phase==='answer')micSt('Říkej písmena nahlas, jedno po druhém.');};
+  r.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){const res=e.results[i];
+    if(G.phase!=='answer'||locked){cur.idx=-1;continue;}
+    if(cur.idx!==i)cur={idx:i,start:dictFull?inputs.length:activeIdx,done:[]};
+    let heard=res[0].transcript,letters=parseLetters(heard);
+    if(res.isFinal)for(const alt of res){const l=parseLetters(alt.transcript);if(l.filter(isL).length>letters.filter(isL).length){letters=l;heard=alt.transcript;}}
+    applyLetters(letters.filter(isL));
+    if(res.isFinal){
+      for(const c of letters.filter(x=>!isL(x))){if(c==='✓'){check();}else{dictFull=false;const k=activeIdx;if(inputs[k]&&inputs[k].value&&(k===inputs.length-1)){inputs[k].value='';clean(k);}else if(k>0){inputs[k-1].value='';clean(k-1);focusBox(k-1);}}}
+      if(!letters.length&&heard.trim())micSt('Slyšel jsem „'+esc(heard)+'“. Zkus písmeno říct znovu, třeba „bé“.');
+      cur.idx=-2-i;}
+    if(letters.length&&!dictFull)micSt('Slyším: <b>'+esc(heard)+'</b> → '+letters.filter(isL).join(' '));}};
+  r.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){micBlocked=true;micPref=false;
+      micSt('Mikrofon tu není povolený. V náhledu v Claude diktování nefunguje. Otevři hru jako samostatnou stránku v Chrome nebo Edge a mikrofon povol.','warn');}
+    else if(e.error==='network')micSt('Diktování potřebuje internet. Zatím piš na klávesnici.','warn');
+    else if(e.error==='audio-capture'){micPref=false;micSt('Nenašel jsem mikrofon. Zkontroluj, že je připojený.','warn');}};
+  r.onend=()=>{if(rec===r)rec=null;if(micPref&&!micBlocked){setTimeout(micListen,150);}else{micUi(false);snd.duck(false);}};
+  try{r.start();}catch(err){rec=null;}
+}
+function micStop(){const r=rec;rec=null;if(r){r.onend=null;try{r.abort();}catch(e){}}micUi(false);snd.duck(false);}
+function esc(t){return t.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+$('#mic').addEventListener('mousedown',e=>e.preventDefault());
+$('#mic').onclick=()=>{if(rec||micPref){micPref=false;micStop();micSt('Diktování je vypnuté. Můžeš psát na klávesnici.');return;}
+  if(micBlocked){micSt('Mikrofon tu není povolený. Otevři hru jako samostatnou stránku v Chrome nebo Edge a mikrofon povol.','warn');return;}
+  micPref=true;micListen();};
+function focusBox(i){if(inputs[i]){inputs[i].focus({preventScroll:true});activeIdx=i;}}
+function clean(i){inputs[i].classList.remove('ok','bad','shown');}
+function norm(v){return v.toLocaleUpperCase('cs-CZ').replace(/[^\p{L}]/gu,'');}
+function handleInput(i){if(locked)return;const el=inputs[i];let v=norm(el.value);
+  if(!v){el.value='';clean(i);return;}
+  v=v.endsWith('CH')?'Ch':v.slice(-1);
+  put(i,v);}
+function put(i,v){const el=inputs[i];if(!el)return;
+  if(v==='H'&&i>0&&inputs[i-1].value==='C'){inputs[i-1].value='Ch';clean(i-1);el.value='';clean(i);snd.key();focusBox(i);return;}
+  if(v==='H'&&el.value==='C')v='Ch';
+  el.value=v;clean(i);snd.key();
+  if(i+1<inputs.length)focusBox(i+1);else{el.focus({preventScroll:true});setTimeout(()=>{if(document.activeElement===el)el.select();},0);}}
+function onBoxKey(e,i){
+  if(e.key==='Backspace'&&!inputs[i].value&&i>0){e.preventDefault();inputs[i-1].value='';clean(i-1);focusBox(i-1);}
+  else if(e.key==='ArrowLeft'&&i>0){e.preventDefault();focusBox(i-1);}
+  else if(e.key==='ArrowRight'&&i+1<inputs.length){e.preventDefault();focusBox(i+1);}
+  else if(e.key==='Enter'){e.preventDefault();check();}
+  else if(e.key===' '){e.preventDefault();}
+}
+function say(t,cls){const m=$('#msg');m.textContent=t;m.className='msg '+cls;}
+$('#done').onclick=check;
+function check(){
+  if(locked||G.phase!=='answer')return;
+  const vals=inputs.map(i=>i.value),empty=vals.filter(v=>!v).length;
+  if(empty){say(empty===1?'Ještě zbývá doplnit 1 čtvereček.':empty<5?`Ještě zbývá doplnit ${empty} čtverečky.`:`Ještě zbývá doplnit ${empty} čtverečků.`,'info');focusBox(vals.findIndex(v=>!v));return;}
+  G.att++;const wrong=[];
+  vals.forEach((v,i)=>{const ok=v===ALPHA[i];inputs[i].classList.toggle('ok',ok);inputs[i].classList.toggle('bad',!ok);if(!ok)wrong.push(i);});
+  if(!wrong.length)return success();
+  if(G.att>=3)return reveal(wrong);
+  snd.soft();
+  const hacek=wrong.some(i=>'ČĎŇŘŠŤŽ'.includes(ALPHA[i])&&vals[i]===ALPHA[i+1]);
+  if(G.att===1)say(hacek?'Skoro! Nezapomeň na písmena s háčkem, třeba Č nebo Ď.':(wrong.length<=vals.length/2?pick(FAIL1):'Dobrý začátek! Oranžové čtverečky zkus ještě jednou. Začni písmenem A.'),'warn');
+  else{const i=wrong[0];say('Zkus to ještě jednou. '+(i===0?'Abeceda začíná písmenem A.':`Nápověda: po písmenu ${ALPHA[i-1]} přichází ${ALPHA[i]}.`),'warn');}
+  focusBox(wrong[0]);
+}
+function success(){
+  G.letters+=G.n;if(G.att===1)G.clean++;
+  const t=(G.att===1?pick(PRAISE1):pick(PRAISE2)).replace('{n}',G.n).replace('{L}',G.target);say(t,'ok');
+  snd.win();snd.cheer(.7,2.2);crowdParty(1600);confetti(120,innerWidth/2,innerHeight*.45);
+  tween(1000,p=>{A.boyB.arms=p<.8?Math.min(1,p*4):(1-p)*5;A.boyB.jump=Math.abs(Math.sin(p*Math.PI*2))*24;},E.lin);
+  finishRound();
+}
+function reveal(wrong){
+  G.letters+=G.n;wrong.forEach(i=>{inputs[i].value=ALPHA[i];inputs[i].classList.remove('bad');inputs[i].classList.add('shown');});
+  say('Tady je celá řada. Modrá písmenka si dobře prohlédni, příště je najdeš sám.','info');snd.soft();finishRound();
+}
+function finishRound(){locked=true;dictFull=false;cur.idx=-1;snd.duck(false);G.phase='result';inputs.forEach(i=>i.readOnly=true);$('#done').hidden=true;const n=$('#next');n.hidden=false;n.textContent=G.round<4?'Hrajeme dál!':'Na závěrečný hvizd!';setTimeout(()=>n.focus({preventScroll:true}),50);}
+$('#next').onclick=async()=>{
+  $('#panel').classList.remove('open');$('#next').hidden=true;
+  if(G.round>=4){finale();return;}
+  G.round++;G.phase='reset';
+  await tween(250,p=>A.ball.vis=1-p);resetActors();A.ball.vis=0;
+  camTo({x:0,y:0,w:1600},800,E.io);
+  await tween(350,p=>{A.ball.vis=p;A.ball.sc=E.back(p);});
+  startRound();
+};
+
+/* ---------- finale + surprise ---------- */
+async function finale(){
+  G.mode='finale';G.phase='';hideRead();
+  snd.whistle(3);snd.cheer(1.2,4.5);crowdParty(5000);led('ŠAMPION FRANTA');
+  const fwT=setInterval(()=>{const p=w2s(150+Math.random()*1300,130+Math.random()*120);firework(p.x,p.y);},420);
+  setTimeout(()=>clearInterval(fwT),5200);
+  confetti(200);
+  await tween(220,p=>A.boyB.flip=1-p,E.inq);
+  A.boyB.vis=0;Object.assign(A.boyF,{vis:1,X:A.boyB.X,d:A.boyB.d,flip:0,wave:0,jump:0,cheer:0});
+  tween(220,p=>A.boyF.flip=p,E.outq);
+  cine(true);shake=.8;
+  await camTo(faceFrame(A.boyF.X,A.boyF.d,300),1600,E.io);
+  A.boyF.wave=1;
+  await speak('Pět gólů, Františku! Jsi pravý abecední kanonýr. Mám pro tebe tajnou obálku.');
+  A.boyF.wave=0;hideSubs();cine(false);shake=0;camTo(boyMedFrame(A.boyF.X,A.boyF.d,640),1200,E.io);
+  showEnvelope();
+}
+const BOOT=`<svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1b0"/><stop offset=".45" stop-color="#ffc23a"/><stop offset="1" stop-color="#b47300"/></linearGradient></defs><circle cx="60" cy="60" r="56" fill="#0c1c40"/><circle cx="60" cy="60" r="50" fill="none" stroke="url(#gg)" stroke-width="4" stroke-dasharray="3 5"/><path d="M38 30 h24 v30 q0 6 6 8 l20 6 q10 3 10 12 v6 H30 q-6 0 -6 -6 v-8 q0 -6 6 -8 l8 -2z" fill="url(#gg)"/><path d="M30 92 h70 v6 H30z" fill="#b47300"/><g fill="#7a4d00"><circle cx="40" cy="100" r="3"/><circle cx="56" cy="100" r="3"/><circle cx="72" cy="100" r="3"/><circle cx="88" cy="100" r="3"/></g><path d="M44 44 l14 4 M44 52 l14 4" stroke="#fff6cf" stroke-width="3" stroke-linecap="round"/><path d="M92 22 l3 7 7 1 -5 5 1 7 -6 -3 -6 3 1 -7 -5 -5 7 -1z" fill="#fff6cf"/></svg>`;
+function showEnvelope(){
+  const f=$('#finale');f.hidden=false;
+  f.innerHTML=`<div class="env"><h2>Tajná obálka</h2><p>Od trenéra Frantiho akademie. Klikni a otevři ji.</p>
+  <button class="envBtn" id="envBtn" aria-label="Otevřít obálku"><svg viewBox="0 0 320 220"><rect x="10" y="30" width="300" height="180" rx="16" fill="#f5d27a"/><path d="M10 46 L160 140 L310 46 V194 q0 16 -16 16 H26 q-16 0 -16 -16Z" fill="#ffdf8f"/><path id="flap" d="M10 46 q0 -16 16 -16 h268 q16 0 16 16 L160 140Z" fill="#e9b949"/><circle cx="160" cy="132" r="26" fill="#e5383b"/><text x="160" y="143" text-anchor="middle" font-family="Lilita One, sans-serif" font-size="30" fill="#fff">F</text></svg></button>
+  <button class="btn gold" id="envOpen">Otevřít obálku</button></div>`;
+  const open=()=>{snd.chime();showReward();};$('#envBtn').onclick=open;$('#envOpen').onclick=open;setTimeout(()=>$('#envOpen').focus(),100);
+}
+function showReward(){
+  const f=$('#finale');const last=G.target||'Ž';
+  f.innerHTML=`<article class="reward" aria-live="polite">
+   <div class="rhead">${BOOT}<div><h2>Zlatá kopačka</h2><p>pro Františka · 5 gólů · ${G.letters} napsaných písmen abecedy až po ${last}</p></div></div>
+   <section class="chal"><h3>Tvoje skutečná výzva: Abecední přihrávky</h3>
+     <ol><li>Vezmi si míč a najdi zeď nebo parťáka.</li><li>Při každé přihrávce řekni nahlas další písmeno: A, Á, B, C…</li><li>Dokážeš dojít až k Ž? Když míč uteče, pokračuj tam, kde jsi skončil.</li></ol></section>
+   <p class="bonus">Bonus: vymysli si vlastní gólovou oslavu a předveď ji doma.</p>
+   <p class="champ" id="champ" hidden>Šampion! Jsi jednička na hřišti i v abecedě.</p>
+   <div class="ract"><button class="btn gold" id="chDone">Výzva splněna!</button><button class="btn ghost" id="again">Hrát znovu</button></div></article>`;
+  confetti(160);snd.win();
+  $('#chDone').onclick=()=>{$('#champ').hidden=false;$('#chDone').disabled=true;confetti(220);snd.win();snd.cheer(1,3);crowdParty(3000);for(let i=0;i<5;i++)setTimeout(()=>firework(innerWidth*(.15+Math.random()*.7),innerHeight*(.12+Math.random()*.25)),i*300);};
+  $('#again').onclick=restart;
+}
+function restart(){
+  $('#finale').hidden=true;$('#finale').innerHTML='';parts=[];
+  Object.assign(G,{round:0,goals:0,phase:'',target:'',n:0,att:0,letters:0,clean:0,shots:shotOrder()});setGoals();
+  playIntro();
+}
+
+/* ---------- keyboard ---------- */
+addEventListener('keydown',e=>{
+  if(G.mode==='intro'&&e.key==='Escape'){skipIntro();return;}
+  if(G.mode==='game'&&G.phase==='aim'&&(e.key===' '||e.key==='Enter')){e.preventDefault();shoot();}
+});
+
+/* ---------- start ---------- */
+$('#startBtn').onclick=()=>{snd.init();$('#gate').hidden=true;playIntro();};
+/* gate camera drift */
+let gateDrift=true;
+
+/* ---------- loop ---------- */
+function loop(now){
+  runTweens(now);
+  if(G.mode==='gate'){cam.x=120+Math.sin(now/4000)*40;cam.w=1360;cam.y=60;}
+  applyCam(now);renderActors(now);renderMouth(now);renderRipple(now);renderCrowd(now);renderFx();
+  requestAnimationFrame(loop);
+}
+buildStadium();resetActors();A.boyF.vis=1;
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
