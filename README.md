@@ -23,7 +23,7 @@ Interaktivní hra pro procvičování sčítání do 20. Děti plní zakázky v 
 
 ### 2. Kým budeš jednou? 🦸‍♂️
 
-**[📂 Otevřít hru](./jakybudeshrdina.html)** (ke stažení z tohoto repozitáře)
+**[🚀 Hrát online](https://veronikasus.github.io/frantiskovy-hry/jakybudeshrdina.html)** | **[📂 Otevřít hru](./jakybudeshrdina.html)** (ke stažení z tohoto repozitáře)
 
 Interaktivní osobnostní kvíz pro děti, který pomáhá objevovat jejich zájmy a silné stránky hravou formou.
 
