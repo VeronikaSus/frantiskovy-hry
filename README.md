@@ -81,6 +81,27 @@ Fotbalová hra na procvičování české abecedy (2. třída). Franta s čísle
 
 ---
 
+### 5. Kouzelný podzim 🍂
+
+**[🚀 Hrát online](https://veronikasus.github.io/frantiskovy-hry/kouzelny-podzim.html)** | **[📂 Otevřít hru](./kouzelny-podzim.html)** (ke stažení z tohoto repozitáře)
+
+Hra na učení básničky nazpaměť (2. třída), v podzimním stylu čítanky s akvarelovým listím. Dítě je „kouzelný podzim“ a každá dohraná hra vybarví jeden lístek na stromě. Když je strom celý vybarvený, listí opadá a stromy jdou spát.
+
+Hra funguje s jakoukoli básničkou: rodič při prvním otevření vloží její text (sloky oddělí prázdným řádkem). Text básničky v repozitáři není.
+
+**Hlavní funkce:**
+- 👂 **Ozvěna** – dítě slyší řádek a zopakuje ho nahlas, pak celou sloku
+- 🧩 **Skládačka** – vítr rozfoukal řádky, dítě je seřadí
+- 🎵 **Rýmy** – vybírá slovo na konec řádku podle rýmu
+- 🍂 **Padající listí** – slova postupně opadávají, až dítě říká sloku samo
+- 🏆 Celá básnička: nejdřív se začátky řádků, pak Velká zkouška s hodnocením
+- 👩 Tipy a plán na několik dní pro rodiče
+- 💾 Postup se ukládá v prohlížeči
+
+**Technologie:** Vanilla JavaScript, HTML5, CSS3, inline SVG, Web Audio, Web Speech API (pure frontend, single file)
+
+---
+
 ## 🎨 Design principy
 
 Všechny hry sdílí společné designové principy:
@@ -115,6 +136,11 @@ Hra běží na [qmedia.cz/franti/](https://qmedia.cz/franti/) - stačí otevří
 3. Diktování potřebuje internet (rozpoznávání řeči běží u Googlu / Microsoftu)
 
 Pozn.: Když se soubor otevře přímo z počítače (`file://`), Chrome si povolení mikrofonu nepamatuje a ptá se znovu.
+
+### Kouzelný podzim
+1. Otevři hru přes odkaz **Hrát online** (nebo stáhni `kouzelny-podzim.html` a otevři v prohlížeči)
+2. Při prvním spuštění vlož text básničky – na iPhonu i Macu jde text z fotky označit a zkopírovat
+3. Postup se pamatuje v daném prohlížeči; na jiném zařízení je potřeba text vložit znovu
 
 ---
 
