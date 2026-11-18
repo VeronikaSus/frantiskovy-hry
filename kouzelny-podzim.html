@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kouzelný podzim – básničková hra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Merriweather:ital,wght@0,900;1,700&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FBF7EE; --card:#FFFDF8; --ink:#2B2420; --muted:#7A6C60; --line:#EADFCB;
+  --blue:#1F8ED8; --yellow:#F2C531; --orange:#E8892B; --red:#C8392B; --wine:#8E3B4A;
+  --peach:#D98E6A; --brown:#7A4A2E; --olive:#8A9A3B; --green:#6E8B3D; --leafgreen:#86A84A;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:Nunito,system-ui,sans-serif;min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;cursor:pointer}
+.deco{position:fixed;z-index:0;pointer-events:none;width:46px;animation:sway 5s ease-in-out infinite alternate}
+@keyframes sway{from{transform:rotate(calc(var(--r) - 8deg)) translateY(0)}to{transform:rotate(calc(var(--r) + 8deg)) translateY(6px)}}
+@media (max-width:820px){.deco{width:30px;opacity:.45}}
+.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:18px 16px 70px}
+h1.title{font-family:Merriweather,Georgia,serif;font-weight:900;color:var(--blue);text-transform:uppercase;font-size:clamp(24px,6vw,38px);text-align:center;margin:10px 0 2px;letter-spacing:.01em}
+.author{font-family:Merriweather,Georgia,serif;font-style:italic;font-weight:700;text-align:center;margin:0 0 6px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:22px;padding:20px;margin:16px 0;box-shadow:0 6px 0 rgba(122,74,46,.08)}
+h2{font-family:Merriweather,Georgia,serif;font-weight:900;font-size:22px;margin:0 0 10px;color:var(--brown)}
+h2 small{font-family:Nunito;font-weight:600;font-size:15px;color:var(--muted)}
+.hint{color:var(--muted);font-size:17px;margin:4px 0 14px;line-height:1.4}
+.btn{font-weight:900;font-size:19px;padding:14px 24px;border-radius:999px;border:none;background:var(--orange);color:#fff;box-shadow:0 5px 0 #B5641A;transition:transform .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #B5641A}
+.btn.green{background:var(--green);box-shadow:0 5px 0 #4C6527}
+.btn.green:active{box-shadow:0 2px 0 #4C6527}
+.btn.sec{background:#fff;color:var(--brown);border:2px solid var(--line);box-shadow:0 5px 0 var(--line)}
+.btn.big{font-size:22px;padding:18px 30px}
+.btn.small{font-size:15px;padding:9px 16px}
+.actions{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:18px}
+.linkbtn{background:none;border:none;color:var(--muted);font-weight:800;font-size:15px;padding:8px;text-decoration:underline}
+/* poem text */
+.poem{font-family:Andika,Verdana,sans-serif;font-size:clamp(20px,4.8vw,27px);line-height:1.55;margin:6px auto;max-width:560px}
+.ln{padding:2px 8px;border-radius:12px;transition:all .3s}
+.echo .ln.done{color:var(--muted)}
+.echo .ln.cur{background:#FFF1C9;font-weight:700;font-size:1.12em;padding:8px 12px;margin:6px -4px;box-shadow:inset 0 0 0 2px var(--yellow)}
+.echo .ln.next{filter:blur(4px);opacity:.35;user-select:none}
+/* words */
+.w{display:inline-block;margin-right:.28em;border-radius:8px;position:relative}
+.w.blank{background:#F6E7C8;border-bottom:3px dashed var(--orange);cursor:pointer;min-width:1.4em}
+.w.blank .bt{visibility:hidden}
+.w.blank.peek{background:#FFF6DD}
+.w.blank.peek .bt{visibility:visible;color:var(--orange)}
+.w.first{font-weight:700;color:var(--brown)}
+/* order game */
+.slots{display:grid;gap:8px;margin-bottom:16px}
+.slot{font-family:Andika,Verdana,sans-serif;font-size:clamp(18px,4.3vw,23px);border:2px dashed var(--line);border-radius:14px;padding:10px 14px;min-height:50px;color:var(--muted)}
+.slot.filled{border-style:solid;border-color:#CFE0A8;background:#F3F8E6;color:var(--ink);animation:pop .35s}
+.pool{display:grid;gap:10px}
+.lcard{font-family:Andika,Verdana,sans-serif;font-size:clamp(18px,4.3vw,23px);text-align:left;background:#FFF6E6;border:2px solid #F0C98A;border-radius:16px;padding:12px 16px 12px 52px;position:relative;color:var(--ink)}
+.lcard svg{position:absolute;left:10px;top:50%;width:30px;transform:translateY(-50%) rotate(-20deg)}
+.lcard.glow{box-shadow:0 0 0 4px var(--yellow);animation:pulse 1s infinite alternate}
+@keyframes pulse{to{box-shadow:0 0 0 8px rgba(242,197,49,.4)}}
+.shake{animation:shake .4s}
+@keyframes shake{20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+@keyframes pop{0%{transform:scale(.85)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
+/* rhyme game */
+.gap{display:inline-block;min-width:3.2em;text-align:center;background:#FFF1C9;border-bottom:3px solid var(--orange);border-radius:8px;padding:0 6px}
+.gap.ok{background:#E3F0C8;border-color:var(--green);color:#3F5A1A;animation:pop .4s}
+.opts{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:18px}
+.opt{position:relative;border:none;background:none;width:132px;height:112px;padding:0}
+.opt svg{position:absolute;inset:0;width:100%;height:100%}
+.opt span{position:relative;font-family:Andika,Verdana,sans-serif;font-weight:700;font-size:21px;color:#2B2420;background:rgba(255,253,248,.88);padding:2px 8px;border-radius:10px}
+.opt:disabled{opacity:.25}
+/* dots */
+.dots{display:flex;gap:6px;justify-content:center;margin-top:14px}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--line)}
+.dot.on{background:var(--orange)}
+/* top bar */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
+.crumb{font-weight:800;color:var(--muted)}
+/* home */
+.treebox{text-align:center}
+.tree{width:100%;max-width:520px;display:block;margin:0 auto}
+.tree .lp{transition:fill 1s}
+.tree .pop{animation:leafpop 1.2s ease-out}
+@keyframes leafpop{0%{transform:scale(1)}30%{transform:scale(1.7)}100%{transform:scale(1)}}
+.tree .lg{transform-box:fill-box;transform-origin:center}
+.tree.falling .lg{animation:treefall 2.4s cubic-bezier(.4,.1,.6,1) forwards;animation-delay:var(--d)}
+@keyframes treefall{0%{transform:translate(0,0) rotate(0)}30%{transform:translate(calc(var(--dx)*.3),calc(var(--dy)*.2)) rotate(calc(var(--r)*.3))}100%{transform:translate(var(--dx),var(--dy)) rotate(var(--r))}}
+.moon{opacity:0;transition:opacity 2s 1.8s}
+.tree.falling .moon{opacity:1}
+.count{font-weight:900;font-size:19px;color:var(--brown);margin:6px 0 0}
+.sub{color:var(--muted);margin:2px 0 0}
+.grid{display:grid;gap:14px}
+.scard{background:#fff;border:2px solid var(--line);border-radius:18px;padding:14px}
+.shead{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.shead b{font-family:Merriweather,Georgia,serif;font-weight:900;color:var(--blue);font-size:18px}
+.shead .first{font-family:Andika,Verdana,sans-serif;color:var(--muted);font-size:16px}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.chips.two{grid-template-columns:repeat(2,1fr)}
+@media (max-width:520px){.chips{grid-template-columns:repeat(2,1fr)}}
+.chip{border:2px solid var(--line);background:#FFFBF2;border-radius:14px;padding:10px 6px;font-weight:800;font-size:15px;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:4px}
+.chip .ic{font-size:26px;line-height:1;height:30px;display:flex;align-items:center}
+.chip .ic svg{width:26px}
+.chip.done{background:#FFF1D6;border-color:#F0C98A}
+.chip.next{box-shadow:0 0 0 3px var(--yellow)}
+details.parents{background:#fff;border:2px solid var(--line);border-radius:18px;padding:12px 16px;margin-top:16px}
+details.parents summary{font-weight:900;cursor:pointer;color:var(--brown);font-size:17px}
+details.parents p,details.parents li{line-height:1.5;color:#4a3f37}
+.foot{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;margin-top:10px}
+/* setup */
+label{display:block;font-weight:800;margin:12px 0 4px;color:var(--brown)}
+input,textarea{width:100%;font:inherit;font-weight:600;border:2px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff;color:var(--ink)}
+textarea{font-family:Andika,Verdana,sans-serif;font-size:18px;line-height:1.5;resize:vertical}
+.info{font-weight:800;color:var(--green);margin-top:8px;min-height:1.4em}
+.info.bad{color:var(--red)}
+/* overlay */
+.ov{position:fixed;inset:0;background:rgba(43,36,32,.45);z-index:40;display:flex;align-items:center;justify-content:center;padding:18px;animation:fade .25s}
+@keyframes fade{from{opacity:0}}
+.ovc{background:var(--card);border-radius:26px;padding:26px 22px;max-width:420px;width:100%;text-align:center;animation:pop .4s}
+.ovc svg.bigleaf{width:96px;animation:spin 1.4s ease-out}
+@keyframes spin{from{transform:rotate(-200deg) scale(.3)}}
+.ovc h3{font-family:Merriweather,Georgia,serif;font-weight:900;color:var(--blue);font-size:26px;margin:8px 0 6px}
+.ovc p{font-size:18px;margin:0 0 6px;color:#4a3f37}
+.stars{font-size:38px;letter-spacing:6px}
+.fly{position:fixed;width:34px;z-index:60;pointer-events:none;animation:fly 1.9s cubic-bezier(.3,.1,.6,1) forwards}
+@keyframes fly{0%{transform:translate(-50%,-50%) rotate(0)}75%{opacity:1}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) rotate(var(--r));opacity:0}}
+/* exam */
+.bar{display:block;width:100%;text-align:left;font-family:Andika,Verdana,sans-serif;font-size:clamp(18px,4.5vw,25px);border:none;border-radius:12px;padding:6px 12px;margin:4px 0;background:#F6EBD3;color:transparent;min-height:44px;position:relative}
+.bar::before{content:"🍃 " attr(data-n);color:#B79F76;font-size:16px;position:absolute;left:12px;top:50%;transform:translateY(-50%)}
+.bar.open{background:#FFF6DD;color:var(--ink)}
+.bar.open::before{content:none}
+.stz{margin-bottom:16px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="wc" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="3" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3"/>
+    </filter>
+    <radialGradient id="shade" cx="38%" cy="32%" r="78%">
+      <stop offset="0" stop-color="#fff" stop-opacity=".35"/>
+      <stop offset=".5" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#3a1a10" stop-opacity=".35"/>
+    </radialGradient>
+  </defs>
+</svg>
+<div id="decos"></div>
+<div class="wrap" id="app"></div>
+
+<script>
+(function(){
+'use strict';
+const KEY = 'basnicka-hra-v1';
+const app = document.getElementById('app');
+const $ = (s, el) => (el || document).querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const plural = (n, a, b, c) => n === 1 ? a : (n >= 2 && n <= 4 ? b : c);
+const splitTok = w => { const m = w.match(/^([^\p{L}\p{N}]*)(.*?)([^\p{L}\p{N}]*)$/u); return { pre: m[1], core: m[2], post: m[3] }; };
+
+/* ---------- storage ---------- */
+function load(){ try { return JSON.parse(localStorage.getItem(KEY)); } catch(e){ return null; } }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+let S = load();
+let ST = [];
+
+function parsePoem(text){
+  const blocks = String(text || '').replace(/\r/g, '').split(/\n\s*\n/)
+    .map(b => b.split('\n').map(l => l.trim()).filter(Boolean)).filter(b => b.length);
+  if (blocks.length === 1 && blocks[0].length > 6){
+    const out = []; for (let i = 0; i < blocks[0].length; i += 4) out.push(blocks[0].slice(i, i + 4)); return out;
+  }
+  return blocks;
+}
+function freshProgress(n){ return { st: Array.from({length:n}, () => [false,false,false,false]), fin: [false,false], stars: 0 }; }
+function syncPoem(){
+  ST = S ? parsePoem(S.text) : [];
+  if (S && (!S.P || !S.P.st || S.P.st.length !== ST.length)) { S.P = freshProgress(ST.length); save(); }
+}
+syncPoem();
+
+/* ---------- leaves ---------- */
+const SHAPES = {
+  heart: { d:'M50 112 C22 90 4 62 9 37 C13 16 34 9 50 26 C66 9 87 16 91 37 C96 62 78 90 50 112 Z',
+           v:'M50 28 L50 108 M50 46 L30 34 M50 62 L22 52 M50 78 L28 72 M50 46 L70 34 M50 62 L78 52 M50 78 L72 72 M50 28 Q47 14 40 4' },
+  oak:   { d:'M50 6 C58 8 60 18 56 22 C66 18 74 24 68 34 C80 32 86 42 76 50 C88 52 90 64 78 70 C88 76 84 90 72 88 C74 98 62 104 56 98 L53 108 L47 108 L44 98 C38 104 26 98 28 88 C16 90 12 76 22 70 C10 64 12 52 24 50 C14 42 20 32 32 34 C26 24 34 18 44 22 C40 18 42 8 50 6 Z',
+           v:'M50 12 L50 118 M50 30 L63 27 M50 30 L37 27 M50 48 L71 44 M50 48 L29 44 M50 66 L73 66 M50 66 L27 66 M50 84 L65 86 M50 84 L35 86' },
+  maple: { d:'M50 4 L58 24 L72 14 L68 34 L92 30 L80 46 L96 56 L72 60 L76 76 L58 66 L52 84 L48 84 L42 66 L24 76 L28 60 L4 56 L20 46 L8 30 L32 34 L28 14 L42 24 Z',
+           v:'M50 84 L50 118 M50 70 L50 12 M50 62 L84 36 M50 62 L16 36 M50 64 L86 56 M50 64 L14 56 M50 66 L66 74 M50 66 L34 74' },
+  oval:  { d:'M50 8 C78 30 82 78 50 110 C18 78 22 30 50 8 Z',
+           v:'M50 12 L50 119 M50 40 L35 30 M50 40 L65 30 M50 60 L31 50 M50 60 L69 50 M50 80 L35 72 M50 80 L65 72' }
+};
+const SHAPE_KEYS = ['heart','oak','maple','oval'];
+const AUTUMN = ['#F2C531','#E8892B','#C8392B','#8E3B4A','#D98E6A','#9A6232','#E3A92E','#B4502E'];
+function leafInner(shape, color, cls){
+  const s = SHAPES[shape] || SHAPES.heart;
+  return `<g filter="url(#wc)"><path class="${cls||''}" d="${s.d}" style="fill:${color}"/><path d="${s.d}" fill="url(#shade)"/></g>` +
+         `<path d="${s.d}" fill="none" stroke="#2B2420" stroke-width="2.2" stroke-linejoin="round"/>` +
+         `<path d="${s.v}" fill="none" stroke="#2B2420" stroke-width="1.7" stroke-linecap="round"/>`;
+}
+function leafSVG(shape, color, cls){ return `<svg viewBox="0 0 100 120" class="${cls||''}" aria-hidden="true">${leafInner(shape, color)}</svg>`; }
+const rndLeaf = () => [SHAPE_KEYS[Math.floor(Math.random()*4)], AUTUMN[Math.floor(Math.random()*AUTUMN.length)]];
+
+function decorate(){
+  const spots = [
+    ['l',3,6,'heart','#F2C531',-15],['l',1,24,'oak','#E8892B',20],['l',5,40,'oak','#8E3B4A',-25],['l',2,58,'oval','#6E8B3D',10],['l',4,76,'heart','#F2C531',35],['l',1,90,'oak','#C8392B',-10],
+    ['r',3,5,'maple','#E8892B',15],['r',1,20,'oak','#D98E6A',-20],['r',4,36,'heart','#8A9A3B',25],['r',2,52,'oak','#8E3B4A',-30],['r',5,68,'oval','#86A84A',10],['r',2,84,'maple','#C8392B',-15]
+  ];
+  document.getElementById('decos').innerHTML = spots.map(([side,x,y,sh,c,r],i) =>
+    `<div class="deco" style="${side==='l'?'left':'right'}:${x}vw;top:${y}vh;--r:${r}deg;animation-delay:-${(i*0.7)%5}s">${leafSVG(sh,c)}</div>`).join('');
+}
+
+/* ---------- sound & speech ---------- */
+let actx = null;
+function ding(ok){
+  if (S && S.mute) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const t = actx.currentTime, notes = ok === 'win' ? [523,659,784,1047] : ok ? [660,880] : [196];
+    notes.forEach((f, i) => {
+      const o = actx.createOscillator(), g = actx.createGain(), st = t + i * .1;
+      o.type = ok ? 'sine' : 'triangle'; o.frequency.value = f;
+      g.gain.setValueAtTime(.0001, st); g.gain.exponentialRampToValueAtTime(.16, st + .02); g.gain.exponentialRampToValueAtTime(.0001, st + .35);
+      o.connect(g); g.connect(actx.destination); o.start(st); o.stop(st + .38);
+    });
+  } catch(e){}
+}
+let voice = null;
+const hasTTS = 'speechSynthesis' in window;
+function pickVoice(){ try { const vs = speechSynthesis.getVoices(); voice = vs.find(v => /^cs/i.test(v.lang)) || null; } catch(e){} }
+if (hasTTS){ pickVoice(); try { speechSynthesis.onvoiceschanged = pickVoice; } catch(e){} }
+const canSpeak = () => hasTTS && !!voice;
+function speak(t){
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'cs-CZ'; if (voice) u.voice = voice; u.rate = .82; speechSynthesis.speak(u); } catch(e){}
+}
+
+/* ---------- effects ---------- */
+function flyLeaf(x, y, dy, delay){
+  setTimeout(() => {
+    const d = document.createElement('div'); const [sh, c] = rndLeaf();
+    d.className = 'fly'; d.innerHTML = leafSVG(sh, c);
+    d.style.left = x + 'px'; d.style.top = y + 'px';
+    d.style.setProperty('--dx', (Math.random()*160 - 80) + 'px');
+    d.style.setProperty('--dy', (dy || (window.innerHeight - y + 60)) + 'px');
+    d.style.setProperty('--r', (Math.random()*600 - 300) + 'deg');
+    document.body.appendChild(d); setTimeout(() => d.remove(), 2000);
+  }, delay || 0);
+}
+function leafShower(n){ for (let i = 0; i < n; i++) flyLeaf(Math.random()*window.innerWidth, -30, window.innerHeight + 80, i * 90); }
+function shake(el){ el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+
+/* ---------- game model ---------- */
+const STEPS = [
+  { name:'Ozvěna',         icon:'👂', play: playEcho },
+  { name:'Skládačka',      icon:'🧩', play: playOrder },
+  { name:'Rýmy',           icon:'🎵', play: playRhyme },
+  { name:'Padající listí', icon:'🍂', play: playFall }
+];
+const FINALS = [
+  { name:'Začátky řádků', icon:'🌰', play: playStarts },
+  { name:'Velká zkouška', icon:'🏆', play: playExam }
+];
+const voc = () => (S && S.voc ? S.voc : 'kamaráde');
+const totalLeaves = () => ST.length * 4 + 2;
+function doneCount(){ let n = 0; S.P.st.forEach(a => a.forEach(x => { if (x) n++; })); S.P.fin.forEach(x => { if (x) n++; }); return n; }
+function nextStep(){
+  for (let i = 0; i < ST.length; i++) for (let k = 0; k < 4; k++) if (!S.P.st[i][k]) return { s:i, k };
+  for (let k = 0; k < 2; k++) if (!S.P.fin[k]) return { s:'fin', k };
+  return null;
+}
+function startStep(s, k){
+  try { if (hasTTS) speechSynthesis.cancel(); } catch(e){}
+  window.scrollTo(0, 0);
+  if (s === 'fin') FINALS[k].play(); else STEPS[k].play(s);
+}
+function complete(s, k, extra){
+  const arr = s === 'fin' ? S.P.fin : S.P.st[s];
+  const was = arr[k]; arr[k] = true;
+  if (!was) S.flash = true;
+  save(); ding('win'); leafShower(16);
+  const allDone = doneCount() === totalLeaves();
+  const title = extra && extra.title || `Výborně, ${esc(voc())}!`;
+  let text = extra && extra.text || '';
+  if (!was) text += `<p>Vybarvil jsi další lístek na stromě. 🍁</p>`;
+  if (allDone && !was) text += `<p><b>Celý strom je vybarvený!</b> Běž se podívat, co se s ním stane.</p>`;
+  const nx = nextStep();
+  overlay(`${leafSVG(...rndLeaf(), 'bigleaf')}<h3>${title}</h3>${text}
+    <div class="actions"><button class="btn sec" data-o="again">Hrát znovu</button>
+    ${nx && !(nx.s === s && nx.k === k) ? `<button class="btn" data-o="next">Další hra ▶</button>` : ''}
+    <button class="btn green" data-o="home">Ke stromu 🌳</button></div>`, act => {
+      if (act === 'again') startStep(s, k);
+      else if (act === 'next') startStep(nx.s, nx.k);
+      else showHome();
+    });
+}
+function overlay(html, cb){
+  const ov = document.createElement('div'); ov.className = 'ov';
+  ov.innerHTML = `<div class="ovc">${html}</div>`;
+  ov.addEventListener('click', e => { const b = e.target.closest('[data-o]'); if (!b) return; ov.remove(); cb(b.dataset.o); });
+  document.body.appendChild(ov);
+}
+function frame(label, title, inner){
+  return `<div class="topbar"><button class="btn sec small" data-home>← Ke stromu</button><span class="crumb">${label}</span></div>
+  <div class="card">${title ? `<h2>${title}</h2>` : ''}${inner}</div>`;
+}
+function bindHome(){ app.querySelectorAll('[data-home]').forEach(b => b.addEventListener('click', () => { try { if (hasTTS) speechSynthesis.cancel(); } catch(e){} showHome(); })); }
+const dots = (on, n) => `<div class="dots">${Array.from({length:n}, (_, i) => `<span class="dot ${i < on ? 'on' : ''}"></span>`).join('')}</div>`;
+const sLabel = s => `${s + 1}. sloka`;
+
+/* ---------- 1) Ozvěna ---------- */
+function playEcho(s){
+  const lines = ST[s]; let idx = 0, phase = 'lines', reps = 0;
+  function render(){
+    let b = '';
+    if (phase === 'lines'){
+      b += `<p class="hint">${canSpeak() ? 'Poslechni si řádek' : 'Ať ti někdo řádek přečte (nebo si ho přečti sám)'} a zopakuj ho nahlas jako ozvěna. Zkus k němu vymyslet pohyb! 🙌</p>`;
+      b += `<div class="poem echo">` + lines.map((l, i) => `<div class="ln ${i < idx ? 'done' : i === idx ? 'cur' : 'next'}">${esc(l)}</div>`).join('') + `</div>`;
+      b += `<div class="actions">${canSpeak() ? `<button class="btn sec" id="say">🔊 Přečti mi to</button>` : ''}<button class="btn" id="ok">Zopakoval jsem ✓</button></div>`;
+      b += dots(idx, lines.length);
+    } else {
+      b += `<p class="hint">Teď řekni celou sloku nahlas. ${reps === 0 ? 'Poprvé se klidně dívej.' : 'A ještě jednou – zkus se při tom nedívat!'} (${reps + 1}/2)</p>`;
+      b += `<div class="poem">${lines.map(l => `<div class="ln">${esc(l)}</div>`).join('')}</div>`;
+      b += `<div class="actions">${canSpeak() ? `<button class="btn sec" id="say">🔊 Přečti celou</button>` : ''}<button class="btn" id="ok">Řekl jsem ji ✓</button></div>`;
+    }
+    app.innerHTML = frame(sLabel(s), '👂 Ozvěna', b); bindHome();
+    const say = $('#say'); if (say) say.addEventListener('click', () => speak(phase === 'lines' ? lines[idx] : lines.join('. ')));
+    $('#ok').addEventListener('click', () => {
+      ding(true);
+      if (phase === 'lines'){ idx++; if (idx >= lines.length) phase = 'whole'; render(); }
+      else { reps++; if (reps >= 2) complete(s, 0, { text:'<p>Sloku jsi slyšel a zopakoval. Teď ji poskládáš!</p>' }); else render(); }
+    });
+  }
+  render();
+}
+
+/* ---------- 2) Skládačka ---------- */
+function playOrder(s){
+  const lines = ST[s]; let placed = 0, miss = 0;
+  let pool = shuffle(lines.map((_, i) => i));
+  if (lines.length > 1){ let g = 0; while (pool.every((v, i) => v === i) && g++ < 20) pool = shuffle(pool); }
+  function render(){
+    const slots = lines.map((l, i) => `<div class="slot ${i < placed ? 'filled' : ''}">${i + 1}. ${i < placed ? esc(l) : ''}</div>`).join('');
+    const cards = pool.filter(i => i >= placed).map(i => {
+      const [sh, c] = [SHAPE_KEYS[i % 4], AUTUMN[i % AUTUMN.length]];
+      return `<button class="lcard ${miss >= 2 && i === placed ? 'glow' : ''}" data-i="${i}">${leafSVG(sh, c)}${esc(lines[i])}</button>`;
+    }).join('');
+    app.innerHTML = frame(sLabel(s), '🧩 Skládačka',
+      `<p class="hint">Vítr rozfoukal řádky! Ťukej na ně ve správném pořadí – co je první, co druhé…? Řekni každý řádek nahlas.</p>
+       <div class="slots">${slots}</div><div class="pool">${cards}</div>`);
+    bindHome();
+    app.querySelectorAll('.lcard').forEach(b => b.addEventListener('click', () => {
+      const i = +b.dataset.i;
+      if (i === placed){
+        ding(true); const r = b.getBoundingClientRect(); flyLeaf(r.left + 24, r.top + r.height/2, 160);
+        placed++; miss = 0;
+        if (placed >= lines.length){ render(); setTimeout(() => complete(s, 1, { text:'<p>Všechny řádky jsou na svém místě!</p>' }), 700); }
+        else render();
+      } else {
+        ding(false); miss++; shake(b);
+        if (miss >= 2) { const g = app.querySelector(`.lcard[data-i="${placed}"]`); if (g) g.classList.add('glow'); }
+      }
+    }));
+  }
+  render();
+}
+
+/* ---------- 3) Rýmy ---------- */
+function playRhyme(s){
+  const lines = ST[s];
+  const lastCores = [];
+  ST.forEach(st => st.forEach(l => { const t = l.split(/\s+/); const c = splitTok(t[t.length - 1]).core; if (c && !lastCores.some(x => x.toLowerCase() === c.toLowerCase())) lastCores.push(c); }));
+  const extra = [];
+  lines.forEach(l => l.split(/\s+/).forEach(w => { const c = splitTok(w).core; if (c.length > 2 && !extra.some(x => x.toLowerCase() === c.toLowerCase())) extra.push(c); }));
+  const items = lines.map(l => {
+    const t = l.split(/\s+/); const last = splitTok(t[t.length - 1]);
+    const ans = last.core;
+    let others = shuffle(lastCores.filter(w => w.toLowerCase() !== ans.toLowerCase()));
+    if (others.length < 2) others = others.concat(shuffle(extra.filter(w => w.toLowerCase() !== ans.toLowerCase() && !others.includes(w))));
+    return { head: t.slice(0, -1).join(' '), last, ans, opts: shuffle([ans].concat(others.slice(0, 2))) };
+  });
+  let i = 0, solved = false;
+  function lineHTML(it, state){
+    const gap = state === 'ok' ? `<span class="gap ok">${esc(it.ans)}</span>` : `<span class="gap">?</span>`;
+    return `${esc(it.head)} ${esc(it.last.pre)}${gap}${esc(it.last.post)}`;
+  }
+  function render(){
+    const it = items[i];
+    let b = `<p class="hint">Které slovo patří na konec řádku? Pomůže ti rým 🎵 – řekni řádek nahlas a poslouchej, co zní dobře.</p>`;
+    b += `<div class="poem">` + lines.map((l, k) => k < i ? `<div class="ln">${esc(l)}</div>` : k === i ? `<div class="ln" style="background:#FFF8E6">${lineHTML(it, solved ? 'ok' : '')}</div>` : '').join('') + `</div>`;
+    b += `<div class="opts">` + it.opts.map((o, k) => `<button class="opt" data-k="${k}">${leafSVG(SHAPE_KEYS[(i + k) % 4], AUTUMN[(i * 3 + k) % AUTUMN.length])}<span>${esc(o)}</span></button>`).join('') + `</div>`;
+    b += dots(i, lines.length);
+    app.innerHTML = frame(sLabel(s), '🎵 Rýmy', b); bindHome();
+    app.querySelectorAll('.opt').forEach(btn => btn.addEventListener('click', () => {
+      if (solved) return;
+      const o = it.opts[+btn.dataset.k];
+      if (o === it.ans){
+        solved = true; ding(true); const r = btn.getBoundingClientRect(); flyLeaf(r.left + r.width/2, r.top + r.height/2, 200);
+        render();
+        setTimeout(() => { i++; solved = false; if (i >= lines.length) complete(s, 2, { text:'<p>Všechny rýmy sedí!</p>' }); else render(); }, 900);
+      } else { ding(false); shake(btn); btn.disabled = true; }
+    }));
+  }
+  render();
+}
+
+/* ---------- 4) Padající listí ---------- */
+function playFall(s){ fallGame(ST, [s], sLabel(s), () => complete(s, 3, { text:'<p>Všechno listí opadalo a ty sloku umíš sám!</p>' })); }
+function fallGame(all, idxs, label, onDone){
+  const lines = idxs.reduce((a, si) => a.concat(all[si]), []);
+  const toks = lines.map(l => l.split(/\s+/));
+  const keys = []; toks.forEach((t, li) => t.forEach((_, wi) => keys.push(li + ':' + wi)));
+  const firsts = keys.filter(k => k.endsWith(':0')), rest = keys.filter(k => !k.endsWith(':0'));
+  const order = shuffle(rest).concat(shuffle(firsts));
+  const counts = [0, Math.round(rest.length * .35), Math.round(rest.length * .7), rest.length, keys.length];
+  const ROUNDS = counts.length;
+  let round = 0; const hidden = new Set();
+  const msgs = [
+    'Přečti sloku nahlas. Pak začne foukat vítr…',
+    'Pár lístků opadalo! Řekni sloku i s chybějícími slovy. Když nevíš, ťukni na prázdné místo.',
+    'Opadává víc a víc. Zvládneš to?',
+    'Zůstala jen první slova. Řekni celou sloku!',
+    'Všechno listí je dole. Řekni sloku úplně sám! 💪'
+  ];
+  function render(){
+    const html = toks.map((t, li) => `<div class="ln">` + t.map((w, wi) => {
+      const k = li + ':' + wi;
+      return hidden.has(k) ? `<span class="w blank" data-k="${k}"><span class="bt">${esc(w)}</span></span>` : `<span class="w ${round >= 3 && wi === 0 ? 'first' : ''}" data-k="${k}">${esc(w)}</span>`;
+    }).join('') + `</div>`).join('');
+    app.innerHTML = frame(label, '🍂 Padající listí',
+      `<p class="hint">${msgs[round]}</p><div class="poem">${html}</div>
+       <div class="actions"><button class="btn ${round === ROUNDS - 1 ? 'green' : ''}" id="ok">${round === ROUNDS - 1 ? 'Řekl jsem to sám! 🎉' : 'Řekl jsem to nahlas! 🍂'}</button></div>${dots(round + 1, ROUNDS)}`);
+    bindHome();
+    app.querySelectorAll('.w.blank').forEach(el => el.addEventListener('click', () => { el.classList.add('peek'); setTimeout(() => el.classList.remove('peek'), 1600); }));
+    $('#ok').addEventListener('click', () => {
+      if (round === ROUNDS - 1){ onDone(); return; }
+      ding(true); round++;
+      const fresh = order.slice(counts[round - 1], counts[round]);
+      fresh.forEach((k, n) => { const el = app.querySelector(`.w[data-k="${k}"]`); if (el){ const r = el.getBoundingClientRect(); flyLeaf(r.left + r.width/2, r.top + r.height/2, 220 + Math.random()*120, n * 40); } });
+      fresh.forEach(k => hidden.add(k));
+      setTimeout(render, 120);
+    });
+  }
+  render();
+}
+
+/* ---------- Finále 1: začátky řádků ---------- */
+function playStarts(){
+  let b = `<p class="hint">Teď celá básnička! Vidíš jen první slovo každého řádku. Řekni ji celou nahlas. Když nevíš, ťukni na řádek.</p>`;
+  ST.forEach((st, si) => {
+    b += `<div class="poem stz">` + st.map(l => { const t = l.split(/\s+/);
+      return `<div class="ln hl" style="cursor:pointer"><span class="w first">${esc(t[0])}</span>${t.slice(1).map(w => `<span class="w blank"><span class="bt">${esc(w)}</span></span>`).join('')}</div>`; }).join('') + `</div>`;
+  });
+  b += `<div class="actions"><button class="btn green" id="ok">Řekl jsem celou básničku! ✓</button></div>`;
+  app.innerHTML = frame('Celá básnička', '🌰 Začátky řádků', b); bindHome();
+  app.querySelectorAll('.hl').forEach(ln => ln.addEventListener('click', () => {
+    const bl = ln.querySelectorAll('.blank'); bl.forEach(x => x.classList.add('peek')); setTimeout(() => bl.forEach(x => x.classList.remove('peek')), 1800);
+  }));
+  $('#ok').addEventListener('click', () => complete('fin', 0, { text:'<p>Celá básnička jen s prvními slovy – paráda!</p>' }));
+}
+
+/* ---------- Finále 2: velká zkouška ---------- */
+function playExam(){
+  let n = 0, peeks = 0;
+  let b = `<p class="hint">Velká zkouška! Řekni celou básničku zpaměti. Lístky schovávají řádky – ťukni na lístek, jen když opravdu nevíš.</p>`;
+  ST.forEach(st => { b += `<div class="stz">` + st.map(l => `<button class="bar" data-n="${++n}">${esc(l)}</button>`).join('') + `</div>`; });
+  b += `<div class="actions"><button class="btn green big" id="ok">Hotovo! 🏆</button></div>`;
+  app.innerHTML = frame('Celá básnička', '🏆 Velká zkouška', b); bindHome();
+  app.querySelectorAll('.bar').forEach(el => el.addEventListener('click', () => { if (!el.classList.contains('open')){ el.classList.add('open'); peeks++; } }));
+  $('#ok').addEventListener('click', () => {
+    const stars = peeks === 0 ? 3 : peeks <= 2 ? 2 : 1;
+    S.P.stars = Math.max(S.P.stars || 0, stars);
+    const st = '🍁'.repeat(stars) + '<span style="opacity:.25">' + '🍁'.repeat(3 - stars) + '</span>';
+    const text = `<div class="stars">${st}</div>` + (peeks === 0
+      ? `<p><b>Umíš ji celou nazpaměť!</b> Můžeš ji jít říct ve škole.</p>`
+      : `<p>Nápovědu jsi potřeboval ${peeks}×. Zítra to zkus znovu – a bude to ještě lepší!</p>`);
+    complete('fin', 1, { title: peeks === 0 ? `Mistr podzimu, ${esc(voc())}!` : `Skvělá práce, ${esc(voc())}!`, text });
+  });
+}
+
+/* ---------- tree ---------- */
+function treeSVG(total, painted, flash){
+  let s = `<svg viewBox="0 0 400 320" class="tree" id="tree" role="img" aria-label="Strom s ${painted} vybarvenými lístky z ${total}">`;
+  s += `<g class="moon"><circle cx="350" cy="44" r="22" fill="#F7E7A6"/><circle cx="361" cy="38" r="20" fill="var(--card)"/><text x="40" y="44" font-size="20">✨</text><text x="300" y="98" font-size="14">⭐</text></g>`;
+  s += `<ellipse cx="200" cy="304" rx="175" ry="12" fill="#E9DCC2"/>`;
+  s += `<path d="M176 306 C186 256 186 220 172 196 C152 166 118 154 90 144 L96 133 C126 141 156 152 178 172 C184 144 178 116 160 90 L171 84 C192 110 200 142 198 170 C208 142 230 120 266 106 L272 116 C240 131 220 153 214 183 C208 213 214 258 226 306 Z" fill="#7A4A2E" filter="url(#wc)"/>`;
+  s += `<path d="M194 300 C200 260 198 220 200 190" stroke="#5C3520" stroke-width="5" fill="none" opacity=".5"/>`;
+  [[108,138,56,'#9DB55A'],[162,92,64,'#7E9C45'],[236,84,64,'#A6B867'],[294,128,58,'#8AA64E'],[200,142,62,'#93AE52'],[142,172,42,'#A3B862'],[262,172,44,'#7E9C45']]
+    .forEach(([x,y,r,c]) => { s += `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" opacity=".55" filter="url(#wc)"/>`; });
+  for (let i = 0; i < total; i++){
+    const rr = Math.sqrt((i + .5) / total), th = i * 2.39996;
+    const x = 200 + rr * 138 * Math.cos(th), y = 122 + rr * 82 * Math.sin(th);
+    const rot = ((i * 47) % 80) - 40, sh = SHAPE_KEYS[i % 4];
+    const col = i < painted ? AUTUMN[i % AUTUMN.length] : '#6F9A3A';
+    const dx = ((i * 37) % 120) - 60, dy = 296 - y - 6 + ((i * 13) % 10);
+    s += `<g class="lg" style="--dx:${dx}px;--dy:${dy}px;--r:${((i*97)%540)-270}deg;--d:${(i*0.11).toFixed(2)}s"><g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot}) scale(.34) translate(-50 -60)"><g class="${flash && i === painted - 1 ? 'pop' : ''}" style="transform-box:fill-box;transform-origin:center">${leafInner(sh, col, 'lp')}</g></g></g>`;
+  }
+  return s + `</svg>`;
+}
+
+/* ---------- home ---------- */
+function showHome(){
+  if (!S || !ST.length) return showSetup();
+  const total = totalLeaves(), done = doneCount(), nx = nextStep(), flash = !!S.flash;
+  S.flash = false; save();
+  const all = done === total;
+  let h = `<h1 class="title">${esc(S.title || 'Básnička')}</h1>${S.author ? `<p class="author">${esc(S.author)}</p>` : ''}`;
+  h += `<div class="card treebox">${treeSVG(total, done, flash)}
+        <p class="count">Vybarveno ${done} z ${total} lístků</p>
+        <p class="sub">${all ? 'Celý strom je vybarvený! Teď ho můžeš uložit k zimnímu spánku.' : 'Jsi kouzelný podzim! Každá hra vybarví jeden lístek. 🍂'}</p>
+        <div class="actions">${nx ? `<button class="btn big" id="go">▶ Hrát: ${nx.s === 'fin' ? FINALS[nx.k].name : `${sLabel(nx.s)} – ${STEPS[nx.k].name}`}</button>`
+          : `<button class="btn big" id="fall">🍂 Nech listí opadat</button><button class="btn sec" id="exam">🏆 Zkouška znovu</button>`}</div></div>`;
+  h += `<div class="grid">`;
+  ST.forEach((st, i) => {
+    h += `<div class="scard"><div class="shead"><b>${sLabel(i)}</b><span class="first">${esc(st[0])} …</span></div><div class="chips">` +
+      STEPS.map((p, k) => { const d = S.P.st[i][k], isNext = nx && nx.s === i && nx.k === k;
+        return `<button class="chip ${d ? 'done' : ''} ${isNext ? 'next' : ''}" data-s="${i}" data-k="${k}"><span class="ic">${d ? leafSVG(SHAPE_KEYS[k], AUTUMN[(i*4+k) % AUTUMN.length]) : p.icon}</span>${p.name}${d ? ' ✓' : ''}</button>`; }).join('') + `</div></div>`;
+  });
+  h += `<div class="scard"><div class="shead"><b>Celá básnička</b><span class="first">až zvládneš všechny sloky</span></div><div class="chips two">` +
+    FINALS.map((p, k) => { const d = S.P.fin[k], isNext = nx && nx.s === 'fin' && nx.k === k;
+      return `<button class="chip ${d ? 'done' : ''} ${isNext ? 'next' : ''}" data-s="fin" data-k="${k}"><span class="ic">${p.icon}</span>${p.name}${d ? ' ✓' : ''}</button>`; }).join('') + `</div></div></div>`;
+  h += parentTips();
+  h += `<div class="foot"><button class="linkbtn" id="edit">✏️ Upravit básničku</button><button class="linkbtn" id="mute">${S.mute ? '🔇 Zvuky vypnuté' : '🔈 Zvuky zapnuté'}</button><button class="linkbtn" id="reset">↺ Začít znovu</button></div>`;
+  app.innerHTML = h;
+  const go = $('#go'); if (go) go.addEventListener('click', () => startStep(nx.s, nx.k));
+  const ex = $('#exam'); if (ex) ex.addEventListener('click', () => startStep('fin', 1));
+  const fa = $('#fall'); if (fa) fa.addEventListener('click', () => {
+    $('#tree').classList.add('falling'); ding('win'); fa.disabled = true;
+    setTimeout(() => { $('.sub').innerHTML = '🌙 Stromy usnuly. Na jaře se probudí v nové kráse – a ty už básničku umíš!'; }, 2600);
+  });
+  app.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => startStep(c.dataset.s === 'fin' ? 'fin' : +c.dataset.s, +c.dataset.k)));
+  $('#edit').addEventListener('click', showSetup);
+  $('#mute').addEventListener('click', () => { S.mute = !S.mute; save(); showHome(); });
+  const rs = $('#reset'); let armed = false;
+  rs.addEventListener('click', () => {
+    if (!armed){ armed = true; rs.textContent = '↺ Opravdu smazat postup? Ťukni znovu'; setTimeout(() => { armed = false; rs.textContent = '↺ Začít znovu'; }, 4000); return; }
+    S.P = freshProgress(ST.length); save(); showHome();
+  });
+}
+function parentTips(){
+  const n = ST.length;
+  let plan = '';
+  for (let i = 0; i < n; i++) plan += `<li><b>Den ${i + 1}:</b> ${sLabel(i)} (všechny 4 hry)${i > 0 ? ` + jednou říct ${i === 1 ? '1. sloku' : 'předchozí sloky'}` : ''}</li>`;
+  plan += `<li><b>Den ${n + 1}:</b> Celá básnička – Začátky řádků</li><li><b>Den ${n + 2}:</b> Velká zkouška (a klidně ji zopakovat ještě den před školou)</li>`;
+  return `<details class="parents"><summary>👩 Pro rodiče: jak hra učí a doporučený plán</summary>
+  <p>Hra skládá dohromady postupy, které se při učení básniček opakovaně osvědčují:</p>
+  <ol>
+    <li><b>Po kouscích.</b> Každá sloka zvlášť a krátce, cca 10 minut denně. Opakování další den funguje líp než jedno dlouhé biflování.</li>
+    <li><b>Ozvěna.</b> Dospělý řekne řádek, dítě ho hned zopakuje nahlas – stejně se básničky učí ve školce i ve škole. Tlačítko 🔊 se objeví jen tam, kde má zařízení český hlas; přečíst řádek sami je ale ještě lepší.</li>
+    <li><b>Pořadí a rýmy.</b> Skládání řádků ukáže, co následuje po čem, a rým napoví slovo na konci řádku.</li>
+    <li><b>Mizející slova.</b> Slova postupně „opadávají“, až dítě říká sloku samo – jako když se z tabule postupně maže.</li>
+    <li><b>Pohyb a rytmus.</b> Vymyslete ke každému řádku gesto (malování rukou, houpání, padání k zemi, spaní s dlaněmi pod tváří) a klidně do rytmu tleskejte.</li>
+  </ol>
+  <p><b>Plán:</b></p><ul>${plan}</ul>
+  <p>Mezi tím si básničku řekněte jen tak – při cestě do školy nebo před spaním.</p></details>`;
+}
+
+/* ---------- setup ---------- */
+function showSetup(){
+  const t = S ? S.text : '';
+  app.innerHTML = `<h1 class="title">Kouzelný podzim</h1><p class="author">básničková hra</p>
+  <div class="card"><h2>📝 Nastavení básničky <small>(pro rodiče)</small></h2>
+  <p class="hint">Opište nebo vložte text básničky, mezi slokami nechte prázdný řádek. Tip: na iPhonu i na Macu jde text přímo z fotky označit a zkopírovat.</p>
+  <label for="f-title">Název</label><input id="f-title" value="${esc(S ? S.title : 'Listopad – podzim')}">
+  <label for="f-author">Autor</label><input id="f-author" value="${esc(S ? S.author : 'Jan Susa')}">
+  <label for="f-text">Text básničky</label><textarea id="f-text" rows="15" placeholder="První sloka – řádek po řádku&#10;…&#10;&#10;(prázdný řádek)&#10;&#10;Druhá sloka&#10;…">${esc(t)}</textarea>
+  <div class="info" id="f-info"></div>
+  <label for="f-voc">Jak dítě oslovit</label><input id="f-voc" value="${esc(S ? S.voc : 'Františku')}">
+  <div class="actions">${S && ST.length ? `<button class="btn sec" id="f-cancel">Zpět</button>` : ''}<button class="btn" id="f-save">Uložit a hrát 🍂</button></div></div>`;
+  const ta = $('#f-text'), info = $('#f-info');
+  const upd = () => {
+    const p = parsePoem(ta.value), lines = p.reduce((a, b) => a + b.length, 0);
+    if (!lines){ info.textContent = ''; info.className = 'info'; return; }
+    info.className = 'info' + (lines < 2 ? ' bad' : '');
+    info.textContent = `Rozpoznáno: ${p.length} ${plural(p.length, 'sloka', 'sloky', 'slok')}, ${lines} ${plural(lines, 'řádek', 'řádky', 'řádků')} ${lines >= 2 ? '✓' : '– je potřeba aspoň 2 řádky'}`;
+  };
+  ta.addEventListener('input', upd); upd();
+  const c = $('#f-cancel'); if (c) c.addEventListener('click', showHome);
+  $('#f-save').addEventListener('click', () => {
+    const text = ta.value.trim(), p = parsePoem(text);
+    if (p.reduce((a, b) => a + b.length, 0) < 2){ shake(ta); ta.focus(); return; }
+    const changed = !S || S.text !== text;
+    S = Object.assign(S || {}, { title: $('#f-title').value.trim(), author: $('#f-author').value.trim(), text, voc: $('#f-voc').value.trim() || 'kamaráde' });
+    if (changed) S.P = null;
+    syncPoem(); save(); showHome();
+  });
+}
+
+decorate();
+if (S && ST.length) showHome(); else showSetup();
+})();
+</script>
+</body>
+</html>
